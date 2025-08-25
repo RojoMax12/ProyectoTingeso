@@ -6,4 +6,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface StateToolsRepository extends JpaRepository<StateToolsEntity, Long> {
+
+    public StateToolsEntity findByName(String name);
 }

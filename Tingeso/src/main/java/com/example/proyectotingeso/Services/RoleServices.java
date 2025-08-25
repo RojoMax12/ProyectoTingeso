@@ -14,8 +14,24 @@ public class RoleServices {
     private RoleRepository roleRepository;
 
 
-    public RoleEntity createRole(RoleEntity role) {
-        return roleRepository.save(role);
+    public String createRole() {
+        boolean created = false;
+        if(roleRepository.findByName("Employer") == null) {
+            RoleEntity role = new RoleEntity(null, "Employer");
+            roleRepository.save(role);
+            created = true;
+        }
+        if(roleRepository.findByName("Admin") == null) {
+            RoleEntity role = new RoleEntity(null, "Admin");
+            roleRepository.save(role);
+            created = true;
+        }
+        if(created) {
+            return "Roles creados correctamente";
+        }
+        else {
+            return "Roles ya inicializados";
+        }
     }
 
     public List<RoleEntity> getAllRoles() {
@@ -33,6 +49,9 @@ public class RoleServices {
         } catch (Exception e) {
             throw new Exception(e.getMessage());
         }
+    }
 
+    public RoleEntity updateRole(RoleEntity role) {
+        return roleRepository.save(role);
     }
 }

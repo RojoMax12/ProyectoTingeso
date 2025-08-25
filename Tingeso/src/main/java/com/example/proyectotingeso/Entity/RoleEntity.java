@@ -17,5 +17,6 @@ public class RoleEntity {
     @Column(unique = true, nullable = false)
     private Long id;
 
+    @Column(unique = true)
     private String name;
 }

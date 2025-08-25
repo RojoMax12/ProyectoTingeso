@@ -40,4 +40,10 @@ public class UserController {
         var isDelete =  userServices.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/login")
+    public ResponseEntity<Boolean> login(@RequestBody UserEntity user){
+        var login = userServices.login(user);
+        return ResponseEntity.ok(login);
+    }
 }

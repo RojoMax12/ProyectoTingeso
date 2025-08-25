@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.management.relation.Role;
+
 @Entity
 @Data
 @Table(name = "Users")
@@ -25,9 +27,14 @@ public class UserEntity {
 
     private String phone;
 
-    private String state;
+    @Column(nullable = false)
+    private Long state;
 
+    @Column(unique = true, nullable = false)
     private String rut;
+
+    @Column(nullable = false)
+    private Long role;
 
 
 

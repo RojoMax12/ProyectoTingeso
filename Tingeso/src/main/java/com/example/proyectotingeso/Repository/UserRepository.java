@@ -1,13 +1,13 @@
 package com.example.proyectotingeso.Repository;
 
 import com.example.proyectotingeso.Entity.UserEntity;
-import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
 
 @Repository
-public interface UserRepository extends CrudRepository<UserEntity, Long> {
+public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
     public UserEntity findByRut(String rut);
 

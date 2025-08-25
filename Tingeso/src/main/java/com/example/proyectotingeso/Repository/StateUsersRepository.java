@@ -6,4 +6,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface StateUsersRepository extends JpaRepository<StateUsersEntity, Long> {
+
+    public StateUsersEntity findByName(String name);
 }

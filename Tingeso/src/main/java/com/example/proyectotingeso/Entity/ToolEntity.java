@@ -15,12 +15,12 @@ public class ToolEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(unique = true, nullable = false)
-
     private Long id;
 
     private String name;
 
     private String category;
 
-    private String states;
+    @Column(nullable = false)
+    private Long states;
 }
