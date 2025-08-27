@@ -1,0 +1,2 @@
+Todo lo que sea por pantalla, puede ser un componente, definir todos los componente como funcion
+los componentes retornan HTML, en el app definen las rutas de navigacion de la aplicacion

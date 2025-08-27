@@ -26,6 +26,13 @@ public class LoanToolsController {
 
     }
 
+    @PutMapping("/return/{iduser}/{idloantools}")
+    public ResponseEntity<LoanToolsEntity> returnLoanTools(@PathVariable Long iduser, @PathVariable Long idloantools) {
+        LoanToolsEntity newLoanTools = loanToolsServices.returnLoanTools(iduser, idloantools);
+        return ResponseEntity.ok(newLoanTools);
+    }
+
+
     @PutMapping("/")
     public ResponseEntity<LoanToolsEntity> updateLoanTools(@RequestBody LoanToolsEntity loanToolsEntity) {
         LoanToolsEntity newLoanTools = loanToolsServices.UpdateLoanToolsEntity(loanToolsEntity);

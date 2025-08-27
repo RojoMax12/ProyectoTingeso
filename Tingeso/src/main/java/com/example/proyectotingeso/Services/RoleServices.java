@@ -26,6 +26,11 @@ public class RoleServices {
             roleRepository.save(role);
             created = true;
         }
+        if(roleRepository.findByName("Client") == null) {
+            RoleEntity role = new RoleEntity(null, "Client");
+            roleRepository.save(role);
+            created = true;
+        }
         if(created) {
             return "Roles creados correctamente";
         }

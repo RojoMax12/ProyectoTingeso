@@ -21,6 +21,8 @@ public class ToolEntity {
 
     private String category;
 
+    private int replacement_cost;
+
     @Column(nullable = false)
     private Long states;
 }

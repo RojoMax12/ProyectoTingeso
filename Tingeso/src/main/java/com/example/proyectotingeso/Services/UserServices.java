@@ -1,13 +1,16 @@
 package com.example.proyectotingeso.Services;
 
+import com.example.proyectotingeso.Entity.ToolEntity;
 import com.example.proyectotingeso.Entity.UserEntity;
 import com.example.proyectotingeso.Repository.RoleRepository;
 import com.example.proyectotingeso.Repository.StateUsersRepository;
+import com.example.proyectotingeso.Repository.ToolRepository;
 import com.example.proyectotingeso.Repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class UserServices {
@@ -20,6 +23,10 @@ public class UserServices {
 
     @Autowired
     StateUsersRepository stateUsersRepository;
+
+    @Autowired
+
+    ToolRepository toolRepository;
 
     public ArrayList<UserEntity> getAllUsers() {
 
@@ -52,11 +59,11 @@ public class UserServices {
     }
 
     public UserEntity saveUser(UserEntity user) {
-        // Si no viene con rol → asignar Employer por defecto
+        // Si no viene con rol → asignar Client por defecto
         if (user.getRole() == null) {
-            var defaultRole = roleRepository.findByName("Employer");
+            var defaultRole = roleRepository.findByName("Client");
             if (defaultRole == null) {
-                throw new IllegalStateException("El rol por defecto 'Employer' no está inicializado en la base de datos");
+                throw new IllegalStateException("El rol por defecto 'Client' no está inicializado en la base de datos");
             }
             user.setRole(defaultRole.getId());
 
@@ -75,6 +82,20 @@ public class UserServices {
         }
         // Guardar usuario (única llamada a save)
         return userRepository.save(user);
+    }
+
+    public void Changereplacement_costTool(String nametool, Long Userid, int cost) {
+        UserEntity user = userRepository.findById(Userid).get();
+        if (roleRepository.findById(user.getRole()).get().getName().equals("Admin")) {
+            List<ToolEntity> tools = toolRepository.findAllByName(nametool);
+            for (ToolEntity tool : tools) {
+                tool.setReplacement_cost(cost);
+            }
+            toolRepository.saveAll(tools);
+        }
+        else {
+            throw new IllegalArgumentException("No eres administrador");
+        }
     }
 
     public UserEntity updateUser(UserEntity user) {

@@ -1,0 +1,43 @@
+package com.example.proyectotingeso.Controllers;
+
+import com.example.proyectotingeso.Entity.KardexEntity;
+import com.example.proyectotingeso.Services.KardexServices;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/kardex")
+public class KardexController {
+
+
+    @Autowired
+    KardexServices kardexServices;
+
+
+    @PostMapping("/")
+    public ResponseEntity<KardexEntity> createKardex(@RequestBody KardexEntity kardexEntity) {
+        KardexEntity newKardexEntity = kardexServices.save(kardexEntity);
+        return ResponseEntity.ok(newKardexEntity);
+    }
+
+    @PostMapping("/update")
+    public ResponseEntity<KardexEntity> updateKardex(@RequestBody KardexEntity kardexEntity) {
+        KardexEntity newKardexEntity = kardexServices.Update(kardexEntity);
+        return ResponseEntity.ok(newKardexEntity);
+    }
+
+    @GetMapping("/Allkardex")
+    public ResponseEntity<List<KardexEntity>> getAllKardex() {
+        List<KardexEntity> kardex = kardexServices.findAll();
+        return ResponseEntity.ok(kardex);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteKardex(@PathVariable Long id) throws Exception {
+        var isDelete = kardexServices.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+}

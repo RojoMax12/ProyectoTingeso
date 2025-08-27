@@ -45,4 +45,16 @@ public class ToolController {
         return ResponseEntity.noContent().build();
 
     }
+
+    @GetMapping("/inventory")
+    public ResponseEntity<Integer> getinvetory(@RequestBody ToolEntity toolEntity) {
+        int inv = toolServices.inventory(toolEntity);
+        return ResponseEntity.ok(inv);
+    }
+
+    @DeleteMapping("/{iduser}/{idtool}")
+    public ResponseEntity<Boolean> deletetoolAdmin(@PathVariable Long iduser, @PathVariable Long idtool) throws Exception {
+        var isDelete = toolServices.deleteToolAdmin(iduser,idtool);
+        return ResponseEntity.noContent().build();
+    }
 }
