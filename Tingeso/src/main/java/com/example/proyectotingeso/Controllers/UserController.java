@@ -1,9 +1,11 @@
 package com.example.proyectotingeso.Controllers;
 
 import com.example.proyectotingeso.Entity.UserEntity;
+import com.example.proyectotingeso.Services.ToolServices;
 import com.example.proyectotingeso.Services.UserServices;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,12 +18,17 @@ public class UserController {
     @Autowired
     private UserServices userServices;
 
+    @Autowired
+    private ToolServices toolServices;
+
+    @PreAuthorize(("hasAnyRole('USER , ADMIN')"))
     @PostMapping("/")
     public ResponseEntity<UserEntity> createUser(@RequestBody UserEntity user) {
         UserEntity newUserEntity = userServices.saveUser(user);
         return ResponseEntity.ok(newUserEntity);
     }
 
+    @PreAuthorize(("hasAnyRole('USER , ADMIN')"))
     @GetMapping("/Alluser")
     public ResponseEntity<List<UserEntity>> getAllUser() {
         List<UserEntity> users = userServices.getAllUsers();
@@ -40,7 +47,7 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/login")
+    @PostMapping("/login")
     public ResponseEntity<Boolean> login(@RequestBody UserEntity user){
         var login = userServices.login(user);
         return ResponseEntity.ok(login);

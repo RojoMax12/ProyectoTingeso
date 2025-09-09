@@ -9,3 +9,6 @@ public class...{
 
   } se puede referenciar a los otros repositorios, en esta capa, calcular cosas o hacer cosas de logica de negocios,
   se hace aqui.
+
+
+  Se hace una prueba unitaria por cada metodo, pero se le debe hacer multiples pruebas unitarias a metodos criticos

@@ -4,10 +4,15 @@ import com.example.proyectotingeso.Entity.KardexEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface KardexRepository extends JpaRepository<KardexEntity, Long> {
 
     public Optional<KardexEntity> findById(Long id);
+
+    public List<KardexEntity> findAllByIdtool(Long idTool);
+
+    Long id(Long id);
 }

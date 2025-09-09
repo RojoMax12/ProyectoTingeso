@@ -15,6 +15,8 @@ public interface LoanToolsRepository extends JpaRepository<LoanToolsEntity, Long
 
     public Optional<LoanToolsEntity> findByUseridAndToolid(Long userid, Long toolid);
 
+    public Optional<LoanToolsEntity> findByToolid(Long toolid);
+
     public LoanToolsEntity findByInitiallenddate(LocalDate initiallenddate);
 
     public List<LoanToolsEntity> findByInitiallenddateBefore(LocalDate initiallenddate);

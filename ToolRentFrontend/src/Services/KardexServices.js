@@ -12,3 +12,9 @@ const create = data => {
 const deletekarex = id => {
     return httpClient.delete(`/api/kardex/${id}`);
 }
+
+const update = data => {
+    return httpClient.put("/api/kardex/", data)
+}
+
+export default {getAll, create, deletekarex, update}

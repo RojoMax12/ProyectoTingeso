@@ -3,6 +3,7 @@ package com.example.proyectotingeso.Services;
 import com.example.proyectotingeso.Entity.KardexEntity;
 import com.example.proyectotingeso.Repository.KardexRepository;
 import com.example.proyectotingeso.Repository.LoanToolsRepository;
+import com.example.proyectotingeso.Repository.ToolRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -17,11 +18,11 @@ public class KardexServices {
     @Autowired
     private LoanToolsRepository loanToolsRepository;
 
-    public KardexEntity save(KardexEntity kardexEntity) {
-        loanToolsRepository.findById(kardexEntity.getLoanToolsId())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "No existe el préstamo con id " + kardexEntity.getLoanToolsId() + " en el kardex"));
+    @Autowired
+    private ToolRepository ToolRepository;
 
+
+    public KardexEntity save(KardexEntity kardexEntity) {
         return kardexRepository.save(kardexEntity);
     }
 
@@ -40,6 +41,16 @@ public class KardexServices {
         }
         catch (Exception e) {
             throw new Exception(e.getMessage());
+        }
+    }
+
+    public List<KardexEntity> HistoryKardexTool(Long idTool) {
+        if(ToolRepository.findById(idTool).isPresent()){
+            return kardexRepository.findAllByIdtool(idTool);
+        }
+        else{
+            throw new IllegalArgumentException("No existe la herramienta con id " + idTool);
+
         }
     }
 }

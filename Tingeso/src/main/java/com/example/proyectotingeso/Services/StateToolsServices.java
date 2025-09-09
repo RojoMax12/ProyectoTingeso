@@ -13,8 +13,8 @@ public class StateToolsServices {
 
     public String createStateTools() {
         boolean created = false;
-        if (StateToolsRepository.findByName("Avaible") == null) {
-            StateToolsEntity stateToolsEntity = new StateToolsEntity(null, "Avaible");
+        if (StateToolsRepository.findByName("Available") == null) {
+            StateToolsEntity stateToolsEntity = new StateToolsEntity(null, "Available");
             StateToolsRepository.save(stateToolsEntity);
             created = true;
         }

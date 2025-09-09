@@ -24,24 +24,37 @@ public class LoanToolsServices {
     @Autowired
     StateToolsRepository stateToolsRepository;
 
+    @Autowired
+
+    StateUsersRepository stateUsersRepository;
+
     public LoanToolsEntity getLoanToolsEntityById(Long id) {
         return loanToolsRepository.findById(id).get();
     }
 
     public LoanToolsEntity CreateLoanToolsEntity(LoanToolsEntity loanToolsEntity) {
         List<StateToolsEntity> states = stateToolsRepository.findAll();
-        if(userRepository.findById(loanToolsEntity.getUserid()).isPresent()) {
-            if(toolRepository.findById(loanToolsEntity.getToolid()).isPresent()) {
+        if(userRepository.findById(loanToolsEntity.getUserid()).isPresent() && userRepository.findById(loanToolsEntity.getUserid()).get().getState() == stateUsersRepository.findByName("Active").getId() ) {
+            if(toolRepository.findById(loanToolsEntity.getToolid()).isPresent() && toolRepository.findById(loanToolsEntity.getToolid()).get().getStates() == states.get(0).getId()) {
                 loanToolsEntity.setToolid(toolRepository.findById(loanToolsEntity.getToolid()).get().getId());
                 loanToolsEntity.setUserid(userRepository.findById(loanToolsEntity.getUserid()).get().getId());
                 toolRepository.findById(loanToolsEntity.getToolid()).get().setStates(states.get(1).getId());
                 return loanToolsRepository.save(loanToolsEntity);
             }
-            throw new IllegalArgumentException("La herramienta no existe");
+            throw new IllegalArgumentException("La herramienta no esta disponible");
         }
         throw new IllegalArgumentException("El usuario no existe");
     }
 
+    public int calculatefine(LoanToolsEntity loanToolsEntity){
+        int latefine = 0;
+        int Fine_for_irreparable_damage = 0;
+
+        return 0;
+    }
+
+
+    //Se cambia el estado de la herramienta actual a que esta disponble, falta actualizar en el kardex
     public LoanToolsEntity returnLoanTools(Long userid, Long toolid) {
         // Buscar usuario
         var user = userRepository.findById(userid)

@@ -13,3 +13,6 @@ Public class nombre..{
 
     @GetMapping(ruta)
     public ResponseEntity
+
+
+    Usar @PreAuthorize("hasAnyRole('USER')") según corresponda en cada endpoint. por el tema de keyclock

@@ -7,25 +7,18 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Data
-@Table(name = "Tools")
+@Table(name = "Amountsandrates")
 @NoArgsConstructor
 @AllArgsConstructor
-public class ToolEntity {
+public class AmountsandratesEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(unique = true, nullable = false)
     private Long id;
 
-    @Column(nullable = false)
-    private String name;
+    private double dailyrentalrate;
 
-    @Column(nullable = false)
-    private String category;
+    private double dailylatefeefine;
 
-    @Column(nullable = false)
-    private int replacement_cost;
-
-    @Column(nullable = false)
-    private Long states;
 }

@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+
 @Entity
 @Data
 @Table(name = "Kardex")
@@ -18,6 +20,15 @@ public class KardexEntity {
     @Column(unique = true, nullable = false)
     private Long id;
 
+    private Long StateToolsId;
+
+    private LocalDate Date;
+
+    private Long iduser;
+
     @Column(nullable = false)
-    private Long LoanToolsId;
+    private Long idtool;
+
+    private int quantity;
+
 }
