@@ -20,13 +20,26 @@ public class LoanToolsEntity {
 
     private Long id;
 
+    @Column(nullable = false)
     private LocalDate initiallenddate;
 
+    @Column(nullable = false)
     private LocalDate finalreturndate;
 
     @Column(nullable = false)
-    private Long userid;
+    private Long clientid;
 
     @Column(nullable = false)
     private Long toolid;
+
+    private String status;
+
+    private Double lateFee;
+    
+    private Double rentalFee;
+
+    private Double damageFee;
+
+    private Double repositionFee;
+
 }

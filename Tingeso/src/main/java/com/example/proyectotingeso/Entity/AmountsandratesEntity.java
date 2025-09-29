@@ -21,4 +21,6 @@ public class AmountsandratesEntity {
 
     private double dailylatefeefine;
 
+    private double reparationcharge;
+
 }

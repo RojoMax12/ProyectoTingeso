@@ -1,4 +1,4 @@
-import { defaultExternalConditions } from "vite"
+
 import httpClient from "../http-commons"
 
 const create = data => {

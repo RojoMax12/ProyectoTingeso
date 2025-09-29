@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -13,13 +14,10 @@ public interface LoanToolsRepository extends JpaRepository<LoanToolsEntity, Long
 
     public Optional<LoanToolsEntity> findById(Long id);
 
-    public Optional<LoanToolsEntity> findByUseridAndToolid(Long userid, Long toolid);
+    public Optional<LoanToolsEntity> findByClientidAndToolid(Long clientid, Long toolid);
 
-    public Optional<LoanToolsEntity> findByToolid(Long toolid);
+    public List<LoanToolsEntity> findAllByClientid(Long clientid);
 
-    public LoanToolsEntity findByInitiallenddate(LocalDate initiallenddate);
+    public List<LoanToolsEntity> findAllBystatusInAndRentalFeeGreaterThan(Collection<String> statuses, double rentalFee);
 
-    public List<LoanToolsEntity> findByInitiallenddateBefore(LocalDate initiallenddate);
-
-    public List<LoanToolsEntity> findByFinalreturndate(LocalDate finalreturndate);
 }

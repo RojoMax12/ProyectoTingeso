@@ -26,11 +26,6 @@ public class ToolServices {
     @Autowired
     RoleRepository roleRepository;
 
-    @Autowired
-    KardexRepository kardexRepository;
-
-    @Autowired
-    LoanToolsRepository loanToolsRepository;
 
     public ToolEntity save(ToolEntity toolEntity) {
         LocalDate date = LocalDate.now();
@@ -42,8 +37,6 @@ public class ToolServices {
 
             toolEntity.setStates(availableState.getId());
         }
-
-
         // Guardar primero la herramienta para que genere ID
         ToolEntity savedTool = toolRepository.save(toolEntity);
         return savedTool;
@@ -75,28 +68,23 @@ public class ToolServices {
         return tools.size();
     }
 
-    public ToolEntity unsubscribeToolAdmin(Long iduser, Long idTool) throws Exception{
+    public ToolEntity unsubscribeToolAdmin(Long idTool) throws Exception{
         ToolEntity tool = toolRepository.findById(idTool).get();
         //KardexEntity kardex = new KardexEntity(null, loanToolsRepository.findByToolid(idTool).get().getId(), tool.getId());
-        if(userRepository.findById(iduser).isPresent() && toolRepository.findById(idTool).isPresent()){
-            if(roleRepository.findById(userRepository.findById(iduser).get().getRole()).get().getName().equals("Admin")){
+        if(toolRepository.findById(idTool).isPresent()){
                 tool.setStates(stateToolsRepository.findByName("Discharged").getId());
                 //kardexRepository.save(kardex);
                 return toolRepository.save(tool);
             }
-            new IllegalArgumentException("No eres administrador");
-            return toolRepository.save(tool);
-        }
-        new IllegalArgumentException("No existe el usuario o la herramienta");
+        new IllegalArgumentException("No existe la herramienta");
         return toolRepository.save(tool);
-    }
+        }
+
 
     public ToolEntity borrowedTool(Long idTool) throws Exception{
         ToolEntity tool = toolRepository.findById(idTool).get();
-        //KardexEntity kardex = new KardexEntity(null, loanToolsRepository.findByToolid(idTool).get().getId(), tool.getId());
         if(toolRepository.findById(idTool).isPresent()){
             tool.setStates(stateToolsRepository.findByName("Borrowed").getId());
-            //kardexRepository.save(kardex);
             return toolRepository.save(tool);
         }
         new IllegalArgumentException("No existe la herramienta");
@@ -108,7 +96,7 @@ public class ToolServices {
         ToolEntity tool = toolRepository.findById(idTool).get();
         //KardexEntity kardex = new KardexEntity(null, loanToolsRepository.findByToolid(idTool).get().getId(), tool.getId());
         if(toolRepository.findById(idTool).isPresent()){
-            tool.setStates(stateToolsRepository.findByName("InRepair").getId());
+            tool.setStates(stateToolsRepository.findByName("In repair").getId());
             //kardexRepository.save(kardex);
             return toolRepository.save(tool);
         }

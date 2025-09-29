@@ -24,8 +24,14 @@ const getinventory = data => {
     return httpClient.get("/api/Tools/inventory", data)
 }
 
-const unsuscribeTools = (idtool, iduser) =>{
-    return httpClient.put("/api/Tools/", {params:{idtool,iduser}})
+const unsuscribeTools = (idtool) =>{
+    return httpClient.put(`/api/Tools/${idtool}`);
 }
 
-export default {getAll, create, getid, update, deleteid, getinventory, unsuscribeTools}
+const repairtool = (idtool) => {
+    return httpClient.put(`/api/Tools/inrepair/${idtool}`);
+}
+
+
+
+export default {getAll, create, getid, update, deleteid, getinventory, unsuscribeTools, repairtool}

@@ -17,4 +17,12 @@ const update = data => {
     return httpClient.put("/api/kardex/", data)
 }
 
-export default {getAll, create, deletekarex, update}
+const kardexByDateRange = (inicio, fin) => {
+    return httpClient.get(`/api/kardex/Range/${inicio}/${fin}`);
+}
+
+
+const kardexBytoolname = (nombre) => {
+    return httpClient.get(`/api/kardex/History/${nombre}`);
+}
+export default {getAll, create, deletekarex, update, kardexByDateRange, kardexBytoolname}

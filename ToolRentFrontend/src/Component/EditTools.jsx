@@ -8,6 +8,14 @@ import HomeIcon from "@mui/icons-material/Home";
 import BuildIcon from "@mui/icons-material/Build";
 import AddBoxIcon from "@mui/icons-material/AddBox";
 import { useParams } from "react-router-dom";
+import { useKeycloak } from "@react-keycloak/web";
+import LibraryAddIcon from "@mui/icons-material/LibraryAdd";
+import AssessmentIcon from "@mui/icons-material/Assessment";
+import ContactsIcon from "@mui/icons-material/Contacts";
+import PersonAddAltIcon from '@mui/icons-material/PersonAddAlt';
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import ReportIcon from '@mui/icons-material/Report';
+
 
 const EditTools = () => {
     const [toolName, setToolName] = useState("");
@@ -18,10 +26,16 @@ const EditTools = () => {
     const {id} = useParams(); // <-- Obtiene el id de la URL
 
     const sidebarOptions = [
-        { text: "Inicio", icon: <HomeIcon />, path: "/" },
-        { text: "Herramientas", icon: <BuildIcon />, path: "/ToolList" },
-        { text: "Agregar Herramienta", icon: <AddBoxIcon />, path: "/AddTools" }
-    ];
+  { text: "Inicio", icon: <HomeIcon />, path: "/" },
+  { text: "Herramientas", icon: <BuildIcon />, path: "/ToolList" },
+  { text: "Agregar Herramienta", icon: <LibraryAddIcon />, path: "/AddTools" },
+  { text: "Ver Kardex", icon: <AssessmentIcon />, path: "/Kardex" },
+  { text: "Registrar Cliente", icon: <PersonAddAltIcon />, path: "/RegisterClient" },
+  { text: "Clientes", icon: <ContactsIcon />, path: "/ClientList" },
+  { text: "Reportes", icon: <ReportIcon />, path: "/Reports" },
+  // Solo mostrar Configuraciones si es admin
+  ...(isAdmin ? [{ text: "Configuraciones", icon: <AdminPanelSettingsIcon />, path: "/Configuration" }] : [])
+];
 
 
     const handleSave = () => {
@@ -47,7 +61,7 @@ const EditTools = () => {
             <IconButton
                 color="primary"
                 onClick={() => setDrawerOpen(true)}
-                sx={{ position: "fixed", top: 16, left: 16, zIndex: 10 }}
+                sx={{ position: "fixed", top: 16, left: 16, zIndex: 10, backgroundColor: "#FA812F", boxShadow: 3 , '&:hover': { backgroundColor: "#FA812F" }}}
             >
                 <MenuIcon />
             </IconButton>
@@ -65,7 +79,7 @@ const EditTools = () => {
                 {sidebarOptions.map((option) => (
                     <ListItem key={option.text} disablePadding>
                         <ListItemButton onClick={() => { navigate(option.path); setDrawerOpen(false); }}>
-                            <ListItemIcon>{option.icon}</ListItemIcon>
+                            <ListItemIcon sx={{ color: "#FA812F" }}>{option.icon}</ListItemIcon>
                             <ListItemText primary={option.text} />
                         </ListItemButton>
                     </ListItem>

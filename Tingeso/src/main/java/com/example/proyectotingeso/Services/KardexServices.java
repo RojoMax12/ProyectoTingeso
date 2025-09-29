@@ -7,6 +7,7 @@ import com.example.proyectotingeso.Repository.ToolRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -44,13 +45,17 @@ public class KardexServices {
         }
     }
 
-    public List<KardexEntity> HistoryKardexTool(Long idTool) {
-        if(ToolRepository.findById(idTool).isPresent()){
-            return kardexRepository.findAllByIdtool(idTool);
+    public List<KardexEntity> HistoryKardexTool(String nameTool) {
+        if (ToolRepository.findByName(nameTool) != null) {
+            Long toolId = ToolRepository.findByName(nameTool).getId();
+            return kardexRepository.findAllByIdtool(toolId);
+        } else {
+            throw new IllegalArgumentException("No existe la herramienta con nombre: " + nameTool);
         }
-        else{
-            throw new IllegalArgumentException("No existe la herramienta con id " + idTool);
+    }
 
-        }
+
+    public List<KardexEntity> HistoryKardexDateInitandDateFin(LocalDate init, LocalDate fin) {
+        return kardexRepository.findByDateBetweenOrderByDateDesc(init, fin);
     }
 }

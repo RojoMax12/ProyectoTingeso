@@ -43,7 +43,7 @@ public class StateToolsServices {
     }
 
     public StateToolsEntity getStateToolsEntityById(Long id) {
-        return StateToolsRepository.findById(id).get();
+        return StateToolsRepository.findById(id).orElse(null);
     }
 
     public StateToolsEntity updateStateToolsEntity(StateToolsEntity stateToolsEntity) {

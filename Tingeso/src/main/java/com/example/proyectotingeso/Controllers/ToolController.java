@@ -63,9 +63,9 @@ public class ToolController {
     }
 
     @PreAuthorize(("hasAnyRole('ADMIN')"))
-    @PutMapping("/{idtool}/{iduser}")
-    public ResponseEntity<ToolEntity> unsubscribeToolAdmin(@PathVariable Long idtool, @PathVariable Long iduser) throws Exception {
-        ToolEntity tool = toolServices.unsubscribeToolAdmin(idtool, iduser);
+    @PutMapping("/{idtool}")
+    public ResponseEntity<ToolEntity> unsubscribeTool(@PathVariable Long idtool) throws Exception {
+        ToolEntity tool = toolServices.unsubscribeToolAdmin(idtool);
         return ResponseEntity.ok(tool);
     }
 

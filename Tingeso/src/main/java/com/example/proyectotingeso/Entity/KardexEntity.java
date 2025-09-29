@@ -22,9 +22,9 @@ public class KardexEntity {
 
     private Long StateToolsId;
 
-    private LocalDate Date;
+    private LocalDate date;
 
-    private Long iduser;
+    private String username;
 
     @Column(nullable = false)
     private Long idtool;

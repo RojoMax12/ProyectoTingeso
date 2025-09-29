@@ -5,6 +5,12 @@ import ToolList from "./Component/ToolList";
 import AddTools from "./Component/AddTools";
 import EditTools from "./Component/EditTools";
 import { useKeycloak } from "@react-keycloak/web";
+import Kardex from "./Component/Kardex";
+import Reports from "./Component/Reports";
+import RegisterClient from "./Component/RegisterClient";
+import ClientList from "./Component/ClientList";
+import LoanTool from "./Component/LoanTool";
+import Configuration from "./Component/Configuration";
 
 function App() {
 
@@ -47,7 +53,19 @@ function App() {
 
           <Route path="/EditTools/:id" element={<EditTools />} rolesAllowed={["USER","ADMIN"]} />
 
-          <Route path="*" element={<h2>Página no encontrada</h2>} />'
+          <Route path="/Kardex" element={<Kardex />} rolesAllowed={["USER","ADMIN"]} />
+
+          <Route path="/Reports" element={<Reports />} rolesAllowed={["USER","ADMIN"]} />
+
+          <Route path="/RegisterClient" element={<RegisterClient />} rolesAllowed={["USER","ADMIN"]} />
+
+          <Route path="/ClientList" element={<ClientList />} rolesAllowed={["USER","ADMIN"]} />
+
+          <Route path="/LoanTool/:id" element={<LoanTool />} rolesAllowed={["USER","ADMIN"]} />
+
+          <Route path="/Configuration" element={<Configuration />} rolesAllowed={["ADMIN"]} />
+
+          <Route path="*" element={<h2>Página no encontrada</h2>} />
         </Routes>
       </div>
     </Router>

@@ -116,7 +116,7 @@ public class UserServices {
         UserEntity user = userRepository.findById(Userid).get();
         if (roleRepository.findById(user.getRole()).get().getName().equals("Admin")){
             AmountsandratesEntity amountsandrates = amountsandratesRepository.findById(1L).get();
-            amountsandratesServices.updateAmountAndRates(Rentalrate, amountsandrates.getDailylatefeefine());
+            amountsandratesServices.updateAmountAndRates(amountsandrates);
         }
         else {
             throw new IllegalArgumentException("No eres administrador");
@@ -127,7 +127,7 @@ public class UserServices {
         UserEntity user = userRepository.findById(Userid).get();
         if (roleRepository.findById(user.getRole()).get().getName().equals("Admin")){
             AmountsandratesEntity amountsandrates = amountsandratesRepository.findById(1L).get();
-            amountsandratesServices.updateAmountAndRates(amountsandrates.getDailyrentalrate(), latefeefine);
+            amountsandratesServices.updateAmountAndRates(amountsandrates);
         }
         else {
             throw new IllegalArgumentException("No eres administrador");

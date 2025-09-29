@@ -9,7 +9,7 @@ import java.util.Optional;
 @Repository
 public interface AmountsandratesRepository extends JpaRepository<AmountsandratesEntity, Long>{
 
-    public AmountsandratesEntity findByDailyrentalrateAndDailylatefeefine(double dailyrentalrate, double dailylatefeefeefine);
+    public AmountsandratesEntity findByDailyrentalrateAndDailylatefeefineAndReparationcharge(double dailyrentalrate, double dailylatefeefeefine, double reparationcharge );
 
     public Optional<AmountsandratesEntity> findById(Long id);
 }
