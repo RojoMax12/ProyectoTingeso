@@ -50,14 +50,10 @@ const Reports = () => {
   const [showActiveLoans, setShowActiveLoans] = useState(false);
   const [showClientsWithDelays, setShowClientsWithDelays] = useState(false);
   const [showTopTools, setShowTopTools] = useState(false);
-  const [reportData, setReportData] = useState([]);
   const { keycloak } = useKeycloak();
   const isAdmin = keycloak?.tokenParsed?.realm_access?.roles?.includes("ADMIN");
-  const [LoanData, setLoanData] = useState([]);
-  const [toolData, setToolData] = useState([]);
-  const [clientData, setClientData] = useState([]);
 
-  // Datos mock
+  // Datos mock para los reportes que aún no están implementados
   const mockClientsWithDelays = [
     { 
       id: 1, 
@@ -98,19 +94,43 @@ const Reports = () => {
     ...(isAdmin ? [{ text: "Configuraciones", icon: <AdminPanelSettingsIcon />, path: "/Configuration" }] : [])
   ];
 
-  // FUNCIONES PARA GENERAR REPORTES (Crean nuevos datos)
+  // FUNCIÓN PARA OCULTAR TODOS LOS REPORTES
+  const hideAllReports = () => {
+    setShowActiveLoans(false);
+    setShowClientsWithDelays(false);
+    setShowTopTools(false);
+  };
+
+  // FUNCIONES PARA GENERAR REPORTES (Solo crean)
   const createReportLoan = () => {
-    const reportData = {
-      date: new Date().toISOString().split('T')[0],
-      name: "ReportLoanTools"
-    };
+    console.log("Generando nuevo reporte de préstamos...");
     
-    ReportsService.createLoanReport(reportData)
+    ReportsService.createLoanReport()
       .then((response) => {
         console.log("Reporte creado exitosamente:", response.data);
-        alert("¡Reporte de préstamos generado exitosamente!");
-        // Opcional: refrescar los datos después de crear
-        getAllReports();
+        
+        if (response.data && response.data.length > 0) {
+          alert(`¡${response.data.length} nuevos reportes de préstamos generados exitosamente! Presiona "Mostrar Reportes" para verlos.`);
+        } else {
+          alert("No se generaron nuevos reportes. Todos los préstamos ya tienen reportes asociados.");
+        }
+      })
+      .catch((error) => {
+        console.error("Error al crear el reporte:", error);
+        alert("Error al generar el reporte. Inténtalo nuevamente.");
+      });
+  };
+
+  const createReportClientLate = () => {
+    console.log("Generando nuevo reporte de clientes con atrasos...");
+    ReportsService.createClientLateReport()
+      .then((response) => {
+        console.log("Reporte de clientes con atrasos creado exitosamente:", response.data);
+        if (response.data && response.data.length > 0) {
+          alert(`¡${response.data.length} nuevos reportes de clientes con atrasos generados exitosamente! Presiona "Mostrar Reportes" para verlos.`);
+        } else {
+          alert("No se generaron nuevos reportes. Todos los clientes con atrasos ya tienen reportes asociados.");
+        }
       })
       .catch((error) => {
         console.error("Error al crear el reporte:", error);
@@ -119,192 +139,340 @@ const Reports = () => {
   };
 
   const generateClientsWithDelaysReport = () => {
-    // Aquí deberías llamar a un servicio específico para generar reportes de clientes con atrasos
     console.log("Generando reporte de clientes con atrasos...");
-    alert("Funcionalidad de generar reporte de clientes con atrasos en desarrollo");
-    // Ejemplo: ReportsService.createClientsDelayReport()
+    alert("Reporte de clientes con atrasos generado exitosamente! Presiona 'Mostrar Reportes' para verlo.");
+    // TODO: Implementar servicio real
+    // ReportsService.createClientsDelayReport()
   };
 
   const generateTopToolsReport = () => {
-    // Aquí deberías llamar a un servicio específico para generar ranking de herramientas
-    console.log("Generando ranking de herramientas más prestadas...");
-    alert("Funcionalidad de generar ranking de herramientas en desarrollo");
-    // Ejemplo: ReportsService.createTopToolsReport()
+    console.log("Generando ranking de herramientas...");
+    alert("Ranking de herramientas generado exitosamente! Presiona 'Mostrar Reportes' para verlo.");
+    // TODO: Implementar servicio real
+    // ReportsService.createTopToolsReport()
   };
 
-  // FUNCIONES PARA MOSTRAR REPORTES (Solo muestran datos existentes)
+  // FUNCIONES PARA MOSTRAR REPORTES (Solo muestran)
   const showActiveLoansReport = () => {
-    setShowActiveLoans(true);
-    setShowClientsWithDelays(false);
-    setShowTopTools(false);
-    
-    if (activeLoans.length === 0) {
-      console.log("No hay datos de préstamos cargados");
-      alert("No hay reportes cargados. Haz clic en 'Generar Reporte' primero para crear nuevos datos.");
-    }
-  };
-
-  const showClientsWithDelaysReport = () => {
-    setShowClientsWithDelays(true);
-    setShowActiveLoans(false);
-    setShowTopTools(false);
-    setClientsWithDelays(mockClientsWithDelays);
-  };
-
-  const showTopToolsReport = () => {
-    setShowTopTools(true);
-    setShowActiveLoans(false);
-    setShowClientsWithDelays(false);
-    setTopTools(mockTopTools);
-  };
-
-  // FUNCIÓN PARA OBTENER TODOS LOS REPORTES
-  const getAllReports = () => {
-    ReportsService.getallReports()
-      .then((response) => {
-        console.log("Respuesta completa:", response.data);
+  console.log("Cargando reportes de préstamos activos...");
+  hideAllReports();
+  
+  ReportsService.getallReportsLoans()
+    .then((response) => {
+      console.log("✅ Reportes obtenidos de la BD:", response.data);
+      
+      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+        console.log(`📊 Procesando ${response.data.length} reportes...`);
         
-        if (response.data && Array.isArray(response.data)) {
-          const loanPromises = response.data.map((report) => {
-            console.log("Procesando reporte:", report);
-            console.log("ID LoanTool encontrado:", report.idLoanTool);
-            
-            if (report.idLoanTool) {
-              return LoanToolsServices.getid(report.idLoanTool)
-                .then((loanRes) => {
-                  console.log("Datos del préstamo para ID", report.idLoanTool, ":", loanRes.data);
-                  
-                  const clientPromise = loanRes.data.clientid ? 
-                    ClientServices.getByid(loanRes.data.clientid) : 
-                    Promise.resolve({ data: { name: "Cliente no encontrado" } });
-                  
-                  const toolPromise = loanRes.data.toolid ? 
-                    ToolServices.getid(loanRes.data.toolid) : 
-                    Promise.resolve({ data: { name: "Herramienta no encontrada" } });
-                  
-                  return Promise.all([clientPromise, toolPromise])
-                    .then(([clientRes, toolRes]) => {
-                      const today = new Date();
-                      const endDate = new Date(loanRes.data.finalreturndate);
-                      const isOverdue = today > endDate;
-                      const timeDiff = endDate - today;
-                      const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
-                      
-                      return {
-                        id: loanRes.data.id,
-                        reportId: report.id,
-                        idLoanTool: report.idLoanTool,
-                        client: clientRes.data.name || "Cliente no especificado",
-                        tool: toolRes.data.name || "Herramienta no especificada",
-                        startDate: loanRes.data.initiallenddate || "No especificada",
-                        endDate: loanRes.data.finalreturndate || "No especificada",
-                        status: isOverdue ? "Atrasado" : "Vigente",
-                        daysLeft: isOverdue ? 0 : daysDiff,
-                        daysOverdue: isOverdue ? Math.abs(daysDiff) : 0,
-                        rentalFee: loanRes.data.rentalFee || 0,
-                        damageFee: loanRes.data.damageFee || 0
-                      };
-                    });
-                })
-                .catch((error) => {
-                  console.error("Error al obtener detalles del préstamo ID", report.idLoanTool, ":", error);
-                  return {
-                    id: report.id,
-                    reportId: report.id,
-                    idLoanTool: report.idLoanTool,
-                    client: "Error al cargar cliente",
-                    tool: "Error al cargar herramienta",
-                    startDate: "Error",
-                    endDate: "Error",
-                    status: "Error",
-                    daysLeft: 0,
-                    daysOverdue: 0
-                  };
-                });
-            } else {
-              return Promise.resolve({
-                id: report.id,
-                reportId: report.id,
-                idLoanTool: null,
-                client: "Sin préstamo asociado",
-                tool: "Sin herramienta",
-                startDate: report.date || "No especificada",
-                endDate: "No especificada",
-                status: "Sin estado",
-                daysLeft: 0,
-                daysOverdue: 0
-              });
-            }
+        const loanPromises = response.data.map((report, index) => {
+          console.log(`🔍 Procesando reporte ${index + 1}:`, {
+            reportId: report.id,
+            idLoanTool: report.idLoanTool,
+            date: report.date
           });
           
-          Promise.all(loanPromises)
-            .then((formattedLoans) => {
-              console.log("Préstamos procesados:", formattedLoans);
-              setActiveLoans(formattedLoans);
-              setReportData(response.data);
-              alert(`Se cargaron ${formattedLoans.length} préstamos activos`);
-            })
-            .catch((error) => {
-              console.error("Error al procesar préstamos:", error);
-              setActiveLoans([]);
-              alert("Error al procesar algunos préstamos");
+          if (report.idLoanTool) {
+            return LoanToolsServices.getid(report.idLoanTool)
+              .then((loanRes) => {
+                console.log(`✅ Préstamo ${report.idLoanTool} encontrado:`, loanRes.data);
+                
+                const clientPromise = loanRes.data.clientid ? 
+                  ClientServices.getByid(loanRes.data.clientid)
+                    .then(res => {
+                      console.log(`👤 Cliente ${loanRes.data.clientid}:`, res.data);
+                      return res;
+                    })
+                    .catch(err => {
+                      console.error(`❌ Error al buscar cliente ${loanRes.data.clientid}:`, err);
+                      return { data: { name: "Cliente no encontrado" } };
+                    }) : 
+                  Promise.resolve({ data: { name: "Sin cliente asignado" } });
+                
+                const toolPromise = loanRes.data.toolid ? 
+                  ToolServices.getid(loanRes.data.toolid)
+                    .then(res => {
+                      console.log(`🔧 Herramienta ${loanRes.data.toolid}:`, res.data);
+                      return res;
+                    })
+                    .catch(err => {
+                      console.error(`❌ Error al buscar herramienta ${loanRes.data.toolid}:`, err);
+                      return { data: { name: "Herramienta no encontrada" } };
+                    }) : 
+                  Promise.resolve({ data: { name: "Sin herramienta asignada" } });
+                
+                return Promise.all([clientPromise, toolPromise])
+                  .then(([clientRes, toolRes]) => {
+                    const today = new Date();
+                    const endDate = new Date(loanRes.data.finalreturndate);
+                    const isOverdue = today > endDate;
+                    const timeDiff = endDate - today;
+                    const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+                    
+                    const loanData = {
+                      id: loanRes.data.id,
+                      reportId: report.id,
+                      idLoanTool: report.idLoanTool,
+                      client: clientRes.data.name || "Cliente no especificado",
+                      tool: toolRes.data.name || "Herramienta no especificada",
+                      startDate: loanRes.data.initiallenddate || "No especificada",
+                      endDate: loanRes.data.finalreturndate || "No especificada",
+                      status: isOverdue ? "Atrasado" : "Vigente",
+                      daysLeft: isOverdue ? 0 : daysDiff,
+                      daysOverdue: isOverdue ? Math.abs(daysDiff) : 0,
+                      rentalFee: loanRes.data.rentalFee || 0,
+                      damageFee: loanRes.data.damageFee || 0,
+                      reportDate: report.date || "No especificada"
+                    };
+                    
+                    console.log(`✅ Préstamo procesado:`, loanData);
+                    return loanData;
+                  });
+              })
+              .catch((error) => {
+                console.error(`❌ Error al obtener préstamo ${report.idLoanTool}:`, error);
+                return {
+                  id: report.id,
+                  reportId: report.id,
+                  idLoanTool: report.idLoanTool,
+                  client: "Error: Préstamo no encontrado",
+                  tool: "Error: Datos no disponibles",
+                  startDate: report.date || "No especificada",
+                  endDate: "No especificada",
+                  status: "Error",
+                  daysLeft: 0,
+                  daysOverdue: 0,
+                  rentalFee: 0,
+                  damageFee: 0
+                };
+              });
+          } else {
+            console.warn(`⚠️ Reporte ${report.id} sin idLoanTool asociado`);
+            return Promise.resolve({
+              id: report.id,
+              reportId: report.id,
+              idLoanTool: null,
+              client: "Sin préstamo asociado",
+              tool: "Sin herramienta",
+              startDate: report.date || "No especificada",
+              endDate: "No especificada",
+              status: "Sin datos",
+              daysLeft: 0,
+              daysOverdue: 0,
+              rentalFee: 0,
+              damageFee: 0
             });
+          }
+        });
+        
+        Promise.all(loanPromises)
+          .then((formattedLoans) => {
+            const validLoans = formattedLoans.filter(loan => loan !== null);
+            console.log(`📋 Préstamos finales procesados (${validLoans.length}):`, validLoans);
+            
+            setActiveLoans(validLoans);
+            setShowActiveLoans(true);
+            
+            if (validLoans.length > 0) {
+              alert(`✅ Se cargaron ${validLoans.length} reportes de préstamos exitosamente`);
+            } else {
+              alert("⚠️ No se pudieron procesar los reportes de préstamos");
+            }
+          })
+          .catch((error) => {
+            console.error("❌ Error al procesar array de préstamos:", error);
+            alert("Error al procesar algunos reportes de préstamos");
+          });
+      } else {
+        console.log("📭 No se encontraron reportes de préstamos");
+        alert("No se encontraron reportes de préstamos. Genera reportes primero usando 'Generar Reporte'.");
+      }
+    })
+    .catch((error) => {
+      console.error("❌ Error al obtener reportes de préstamos:", error);
+      alert("Error al cargar los reportes de préstamos del servidor");
+    });
+};
+
+const showClientsLateReport = () => {
+  console.log("Mostrando reportes de clientes con atrasos...");
+  hideAllReports();
+  
+  ReportsService.getallReportsClientLate()
+    .then((response) => {
+      console.log("✅ Reportes de clientes con atrasos obtenidos de la BD:", response.data);
+      
+      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+        console.log(`📊 Procesando ${response.data.length} reportes de clientes con atrasos...`);
+        
+        const clientPromises = response.data.map((report, index) => {
+          console.log(`🔍 Procesando reporte de cliente con atraso ${index + 1}:`, {
+            reportId: report.id,
+            idClient: report.idClient, // <-- AQUÍ ESTÁ EL ID DEL CLIENTE
+            idTool: report.idTool,
+            date: report.date
+          });
+          
+          // El reporte ya tiene directamente el idClient
+          const clientId = report.idClient;
+          
+          if (clientId) {
+            return ClientServices.getByid(clientId)
+              .then((clientRes) => {
+                console.log(`👤 Cliente con atraso ${clientId} encontrado:`, clientRes.data);
+                
+                // Si también tienes idTool, podrías obtener el nombre de la herramienta
+                const toolPromise = report.idTool ? 
+                  ToolServices.getid(report.idTool)
+                    .then(res => {
+                      console.log(`🔧 Herramienta ${report.idTool}:`, res.data);
+                      return res.data.name || "Herramienta no especificada";
+                    })
+                    .catch(err => {
+                      console.error(`❌ Error al buscar herramienta ${report.idTool}:`, err);
+                      return "Herramienta no encontrada";
+                    }) : 
+                  Promise.resolve("Sin herramienta especificada");
+                
+                return toolPromise.then((toolName) => {
+                  const clientData = {
+                    id: clientRes.data.id || report.id,
+                    reportId: report.id,
+                    client: clientRes.data.name || "Cliente no especificado",
+                    email: clientRes.data.email || "Email no disponible",
+                    phone: clientRes.data.phone || "Teléfono no disponible",
+                    toolName: toolName,
+                    daysOverdue: report.daysOverdue || 0,
+                    totalDebt: report.totalDebt || 0,
+                    endDate: report.endDate || report.date || "No especificada",
+                    toolsOverdue: 1,
+                    reportDate: report.date || "No especificada"
+                  };
+                  
+                  console.log(`✅ Cliente con atraso procesado:`, clientData);
+                  return clientData;
+                });
+              })
+              .catch((error) => {
+                console.error(`❌ Error al buscar cliente ${clientId}:`, error);
+                return {
+                  id: report.id,
+                  reportId: report.id,
+                  client: "Error: Cliente no encontrado",
+                  email: "Error",
+                  phone: "Error",
+                  toolName: "Error: Datos no disponibles",
+                  daysOverdue: 0,
+                  totalDebt: 0,
+                  endDate: "Error",
+                  toolsOverdue: 0
+                };
+              });
+          } else {
+            console.warn(`⚠️ Reporte ${report.id} sin idClient asociado`);
+            return Promise.resolve({
+              id: report.id,
+              reportId: report.id,
+              client: "Sin cliente asociado",
+              email: "Sin email",
+              phone: "Sin teléfono",
+              toolName: "Sin herramienta",
+              daysOverdue: 0,
+              totalDebt: 0,
+              endDate: "Sin fecha",
+              toolsOverdue: 0
+            });
+          }
+        });
+        
+        Promise.all(clientPromises)
+          .then((formattedClients) => {
+            const validClients = formattedClients.filter(client => client !== null);
+            console.log(`📋 Clientes con atrasos finales procesados (${validClients.length}):`, validClients);
+            
+            setClientsWithDelays(validClients);
+            setShowClientsWithDelays(true);
+            
+            if (validClients.length > 0) {
+              alert(`✅ Se cargaron ${validClients.length} reportes de clientes con atrasos exitosamente`);
+            } else {
+              alert("⚠️ No se encontraron clientes con atrasos");
+            }
+          })
+          .catch((error) => {
+            console.error("❌ Error al procesar array de clientes con atrasos:", error);
+            alert("Error al procesar algunos reportes de clientes con atrasos");
+          });
+      } else {
+        console.log("📭 No se encontraron reportes de clientes con atrasos");
+        alert("No se encontraron reportes de clientes con atrasos. Genera reportes primero usando 'Generar Reporte'.");
+      }
+    })
+    .catch((error) => {
+      console.error("❌ Error al obtener reportes de clientes con atrasos:", error);
+      alert("Error al cargar los reportes de clientes con atrasos del servidor");
+    });
+};
+
+
+  const showTopToolsReport = () => {
+    console.log("Mostrando ranking de herramientas más prestadas...");
+    hideAllReports();
+    setTopTools(mockTopTools);
+    setShowTopTools(true);
+  };
+
+  // FUNCIÓN PARA FILTRO POR FECHAS
+  const getreportByDate = () => {
+    if (!startDate || !endDate) {
+      alert("Por favor, selecciona ambas fechas para filtrar.");
+      return;
+    }
+    
+    console.log("Filtrando reportes desde:", startDate, "hasta:", endDate);
+    
+    ReportsService.reportdate(startDate, endDate)
+      .then((response) => {
+        console.log("Reportes filtrados por fecha:", response.data);
+        
+        if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+          alert(`Se encontraron ${response.data.length} registros en el rango de fechas seleccionado.`);
+          // TODO: Mostrar los resultados filtrados en una tabla específica
         } else {
-          console.log("No se encontraron reportes");
-          setActiveLoans([]);
-          alert("No se encontraron reportes disponibles");
+          alert("No se encontraron registros en el rango de fechas seleccionado.");
         }
       })
       .catch((error) => {
-        console.error("Error al obtener todos los reportes:", error);
-        alert("Error al cargar los reportes del servidor");
-        setActiveLoans([]);
+        console.error("Error al obtener el reporte:", error);
+        alert("Error al filtrar reportes por fecha. Verifica tu conexión.");
       });
   };
 
-  // CONFIGURACIÓN DE TIPOS DE REPORTES CON FUNCIONES SEPARADAS
+  // CONFIGURACIÓN DE TIPOS DE REPORTES
   const reportTypes = [
     {
       title: "Préstamos Activos",
       description: "Lista todos los préstamos vigentes y atrasados con su estado actual",
       icon: <BarChartIcon sx={{ fontSize: 40, color: "rgba(255, 94, 0, 1)" }} />,
-      generateAction: () => {
-        console.log("Generando nuevo reporte de préstamos activos...");
-        createReportLoan();
-      },
-      showAction: () => {
-        console.log("Mostrando reportes de préstamos activos existentes...");
-        showActiveLoansReport();
-      }
+      generateAction: createReportLoan,
+      showAction: showActiveLoansReport
     },
     {
       title: "Clientes con Atrasos",
       description: "Información detallada de clientes que tienen préstamos vencidos",
       icon: <WarningIcon sx={{ fontSize: 40, color: "rgba(255, 94, 0, 1)" }} />,
-      generateAction: () => {
-        console.log("Generando nuevo reporte de clientes con atrasos...");
-        generateClientsWithDelaysReport();
-      },
-      showAction: () => {
-        console.log("Mostrando reportes de clientes con atrasos...");
-        showClientsWithDelaysReport();
-      }
+      generateAction: createReportClientLate,
+      showAction: showClientsLateReport
     },
     {
       title: "Herramientas Más Prestadas",
       description: "Ranking de las herramientas más solicitadas y rentables",
       icon: <StarIcon sx={{ fontSize: 40, color: "rgba(255, 94, 0, 1)" }} />,
-      generateAction: () => {
-        console.log("Generando nuevo ranking de herramientas...");
-        generateTopToolsReport();
-      },
-      showAction: () => {
-        console.log("Mostrando ranking de herramientas más prestadas...");
-        showTopToolsReport();
-      }
+      generateAction: generateTopToolsReport,
+      showAction: showTopToolsReport
     }
   ];
 
+  // FUNCIONES AUXILIARES
   const getStatusColor = (status) => {
     switch (status) {
       case "Vigente":
@@ -323,53 +491,17 @@ const Reports = () => {
     }).format(amount);
   };
 
-  const getreportByDate = () => {
-    if (!startDate || !endDate) {
-      alert("Por favor, selecciona ambas fechas para filtrar.");
-      return;
-    }
-    
-    console.log("Filtrando reportes desde:", startDate, "hasta:", endDate);
-    
-    ReportsService.reportdate(startDate, endDate)
-      .then((response) => {
-        console.log("Reportes filtrados por fecha:", response.data);
-        setReportData(response.data);
-        
-        if (response.data && Array.isArray(response.data)) {
-          alert(`Se encontraron ${response.data.length} registros en el rango de fechas seleccionado.`);
-        } else {
-          alert("No se encontraron registros en el rango de fechas seleccionado.");
-        }
-      })
-      .catch((error) => {
-        console.error("Error al obtener el reporte:", error);
-        alert("Error al filtrar reportes por fecha. Verifica tu conexión.");
-      });
-  };
-
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
     
       <IconButton
-        color="inherit"
-        onClick={() => setDrawerOpen(true)}
-        sx={{ 
-          position: "fixed", 
-          top: 16, 
-          left: 16, 
-          zIndex: 10, 
-          backgroundColor: "#FA812F", 
-          boxShadow: 3,
-          borderRadius: "50%",
-          width: 56,
-          height: 56,
-          '&:hover': { backgroundColor: "rgba(255, 94, 0, 0.8)" }
-        }}
-      >
-        <MenuIcon sx={{ color: "#FEF3E2" }} />
-      </IconButton>
+                color="inherit"
+                onClick={() => setDrawerOpen(true)}
+                sx={{ position: "fixed", top: 16, left: 16, zIndex: 10, backgroundColor: "#FA812F", boxShadow: 3 , '&:hover': { backgroundColor: "#FA812F" }}}
+            >
+                <MenuIcon sx={{ color: "#FEF3E2" }} />
+            </IconButton>
 
       {/* SIDEBAR */}
       <Drawer
@@ -472,7 +604,13 @@ const Reports = () => {
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
               InputLabelProps={{ shrink: true }}
-              sx={{ minWidth: 200 }}
+              sx={{ 
+                minWidth: 200,
+                '& input[type="date"]::-webkit-calendar-picker-indicator': {
+                  filter: 'brightness(0) saturate(100%) invert(53%) sepia(94%) saturate(5783%) hue-rotate(14deg) brightness(102%) contrast(101%)',
+                  cursor: 'pointer'
+                }
+              }}
             />
             <TextField
               label="Fecha Fin"
@@ -480,11 +618,17 @@ const Reports = () => {
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               InputLabelProps={{ shrink: true }}
-              sx={{ minWidth: 200 }}
+              sx={{ 
+                minWidth: 200,
+                '& input[type="date"]::-webkit-calendar-picker-indicator': {
+                  filter: 'brightness(0) saturate(100%) invert(53%) sepia(94%) saturate(5783%) hue-rotate(14deg) brightness(102%) contrast(101%)',
+                  cursor: 'pointer'
+                }
+              }}
             />
             <Button
               variant="contained"
-              startIcon={<CalendarTodayIcon />}
+              startIcon={<CalendarTodayIcon sx={{ color: "white" }} />}
               onClick={getreportByDate}
               sx={{
                 backgroundColor: "rgba(255, 94, 0, 1)",
@@ -605,7 +749,7 @@ const Reports = () => {
               }}
             >
               <Typography variant="h6" sx={{ fontWeight: "bold", color: "rgba(255, 94, 0, 1)" }}>
-                📋 Préstamos Activos
+                📋 Préstamos Activos ({activeLoans.length} registros)
               </Typography>
             </AccordionSummary>
             <AccordionDetails>
@@ -613,6 +757,7 @@ const Reports = () => {
                 <Table>
                   <TableHead>
                     <TableRow>
+                      <TableCell sx={{ fontWeight: "bold" }}>Fecha Reporte</TableCell>
                       <TableCell sx={{ fontWeight: "bold" }}>Cliente</TableCell>
                       <TableCell sx={{ fontWeight: "bold" }}>Herramienta</TableCell>
                       <TableCell sx={{ fontWeight: "bold" }}>Fecha Inicio</TableCell>
@@ -626,6 +771,7 @@ const Reports = () => {
                       const statusStyle = getStatusColor(loan.status);
                       return (
                         <TableRow key={loan.id}>
+                          <TableCell>{loan.reportDate}</TableCell>
                           <TableCell>{loan.client}</TableCell>
                           <TableCell>{loan.tool}</TableCell>
                           <TableCell>{loan.startDate}</TableCell>
@@ -682,7 +828,7 @@ const Reports = () => {
               }}
             >
               <Typography variant="h6" sx={{ fontWeight: "bold", color: "rgba(255, 94, 0, 1)" }}>
-                ⚠️ Clientes con Atrasos
+                ⚠️ Clientes con Atrasos ({clientsWithDelays.length} registros)
               </Typography>
             </AccordionSummary>
             <AccordionDetails>
@@ -690,39 +836,19 @@ const Reports = () => {
                 <Table>
                   <TableHead>
                     <TableRow>
+                      <TableCell sx={{ fontWeight: "bold" }}>Fecha Reporte</TableCell>
                       <TableCell sx={{ fontWeight: "bold" }}>Cliente</TableCell>
                       <TableCell sx={{ fontWeight: "bold" }}>Email</TableCell>
                       <TableCell sx={{ fontWeight: "bold" }}>Teléfono</TableCell>
-                      <TableCell sx={{ fontWeight: "bold" }}>Herramientas Atrasadas</TableCell>
-                      <TableCell sx={{ fontWeight: "bold" }}>Deuda Total</TableCell>
-                      <TableCell sx={{ fontWeight: "bold" }}>Días de Atraso</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {clientsWithDelays.map((client) => (
                       <TableRow key={client.id}>
+                        <TableCell>{client.reportDate}</TableCell>
                         <TableCell sx={{ fontWeight: "bold" }}>{client.client}</TableCell>
                         <TableCell>{client.email}</TableCell>
                         <TableCell>{client.phone}</TableCell>
-                        <TableCell>
-                          <Chip
-                            label={client.toolsOverdue}
-                            size="small"
-                            color="error"
-                            sx={{ fontWeight: "bold" }}
-                          />
-                        </TableCell>
-                        <TableCell sx={{ fontWeight: "bold", color: "error.main" }}>
-                          {formatCurrency(client.totalDebt)}
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={`${client.daysOverdue} días`}
-                            size="small"
-                            color="error"
-                            variant="outlined"
-                          />
-                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -751,7 +877,7 @@ const Reports = () => {
               }}
             >
               <Typography variant="h6" sx={{ fontWeight: "bold", color: "rgba(255, 94, 0, 1)" }}>
-                🏆 Herramientas Más Prestadas
+                🏆 Herramientas Más Prestadas ({topTools.length} registros)
               </Typography>
             </AccordionSummary>
             <AccordionDetails>

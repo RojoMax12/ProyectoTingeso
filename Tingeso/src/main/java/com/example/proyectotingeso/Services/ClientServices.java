@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class ClientServices {
@@ -20,12 +22,31 @@ public class ClientServices {
     @Autowired
     StateUsersRepository stateUsersRepository;
 
+    @Autowired
+    LoanToolsServices loanToolsServices;
+
 
     public ClientEntity createClient(ClientEntity clientEntity) {
         if (clientEntity.getState() == null) {
             clientEntity.setState(stateUsersRepository.findByName("Active").getId());
-            return clientRepository.save(clientEntity);
         }
+
+        System.out.println("El cliente recibido: " + clientEntity);
+
+        // FORMA SEGURA de verificar duplicados
+        Optional<ClientEntity> existingClientByRut = clientRepository.findFirstByRut(clientEntity.getRut());
+        Optional<ClientEntity> existingClientByEmail = clientRepository.findFirstByEmail(clientEntity.getEmail());
+
+        // Validar RUT duplicado
+        if (existingClientByRut.isPresent()) {
+            throw new IllegalArgumentException("Ya existe un cliente con ese RUT: " + clientEntity.getRut());
+        }
+
+        // Validar Email duplicado
+        if (existingClientByEmail.isPresent()) {
+            throw new IllegalArgumentException("Ya existe un cliente con ese email: " + clientEntity.getEmail());
+        }
+
         return clientRepository.save(clientEntity);
     }
 
@@ -54,6 +75,20 @@ public class ClientServices {
     public ClientEntity getClientById(Long id) {
         return clientRepository.findById(id).orElse(null);
     }
+
+    public List<ClientEntity> getAllClientLoanLate() {
+        List<LoanToolsEntity> loanToolsEntities = loanToolsServices.findallloanstoolstatusLate();
+
+        // Sacar los IDs de cliente
+        List<Long> clientIds = loanToolsEntities.stream()
+                .map(loan -> loan.getClientid())   // aquí uso lambda, no method reference
+                .collect(Collectors.toList());
+
+        // Buscar todos los clientes con esos IDs
+        return clientRepository.findAllById(clientIds);
+    }
+
+
 
 }
 

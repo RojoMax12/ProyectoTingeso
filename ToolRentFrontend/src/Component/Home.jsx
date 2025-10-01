@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"; // <-- Remover 'use' que no se usa
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ThemeProvider, CssBaseline, AppBar, Toolbar, Typography, Stack, Avatar, Button,
@@ -46,6 +46,8 @@ const Home = () => {
   const [selectedLoan, setSelectedLoan] = useState(null);
   const [lateFeeloan, setLateFeeLoan] = useState(0);
   const [lateFeeLoading, setLateFeeLoading] = useState(false);
+  // NUEVO ESTADO: Para controlar si ya se pagó
+  const [isPaid, setIsPaid] = useState(false);
 
   const sidebarOptions = [
     { text: "Inicio", icon: <HomeIcon />, path: "/" },
@@ -165,18 +167,63 @@ const Home = () => {
     keycloak.logout();
   };
 
-  const formatRut = (value) => {
-    if (!value) return "";
-    const [rut, dv] = value.replace(/\./g, "").split("-");
-    if (!rut || !dv) return value;
-    if (rut.length < 7) return value;
-    return `${rut.slice(0, 2)}.${rut.slice(2, 5)}.${rut.slice(5)}-${dv}`;
-  };
+      const validateRut = (rut) => {
+        if (!rut) return false;
+        
+        // Remover puntos y guión
+        const cleanRut = rut.replace(/\./g, '').replace('-', '');
+        
+        if (cleanRut.length < 8 || cleanRut.length > 9) return false;
+        
+        const body = cleanRut.slice(0, -1);
+        const dv = cleanRut.slice(-1).toLowerCase();
+        
+        let sum = 0;
+        let multiplier = 2;
+        
+        for (let i = body.length - 1; i >= 0; i--) {
+            sum += parseInt(body[i]) * multiplier;
+            multiplier = multiplier === 7 ? 2 : multiplier + 1;
+        }
+        
+        const expectedDv = 11 - (sum % 11);
+        const calculatedDv = expectedDv === 11 ? '0' : expectedDv === 10 ? 'k' : expectedDv.toString();
+        
+        return calculatedDv === dv;
+    };
+
+    // Formatear RUT con puntos y guión
+       const formatRut = (value) => {
+        if (!value) return "";
+        
+        // Remover caracteres no numéricos excepto 'k' o 'K'
+        let cleaned = value.replace(/[^0-9kK]/g, '');
+        
+        // Si es muy corto, devolver tal como está
+        if (cleaned.length <= 1) return cleaned;
+        
+        // Separar cuerpo y dígito verificador
+        const body = cleaned.slice(0, -1);
+        const dv = cleaned.slice(-1);
+        
+        // Formatear según la longitud del cuerpo
+        let formattedBody = body;
+        
+        if (body.length >= 6) {
+            // Aplicar formato con puntos desde atrás hacia adelante
+            const reversedBody = body.split('').reverse().join('');
+            const formattedReversed = reversedBody.replace(/(\d{3})(?=\d)/g, '$1.');
+            formattedBody = formattedReversed.split('').reverse().join('');
+        }
+        
+        return formattedBody + (dv ? `-${dv}` : '');
+    };
 
   const handleOpenModal = (loanTool) => {
     setSelectedLoan(loanTool);
     setOpenModal(true);
     setLateFeeLoading(true);
+    setIsPaid(false); // RESET: Al abrir modal, resetear estado de pago
     calculateLateFeeForLoan(loanTool.id);
   };
 
@@ -185,6 +232,7 @@ const Home = () => {
     setSelectedLoan(null);
     setLateFeeLoan(0);
     setLateFeeLoading(false);
+    setIsPaid(false); // RESET: Al cerrar modal, resetear estado de pago
   };
 
   const calculateLateFeeForLoan = (loanId) => {
@@ -262,13 +310,24 @@ const Home = () => {
       .then(response => {
         alert("Pago registrado exitosamente. Todos los cargos han sido cancelados.");
         console.log("Pago registrado:", response.data);
+        setIsPaid(true); // ACTIVAR: Marcar como pagado para habilitar botón "Devolver"
         toolrentWithId(clientData.id);
-        handleCloseModal();
       })
       .catch(error => {
         console.error("Error al pagar multas:", error);
         alert("Error al procesar el pago");
       });
+  };
+
+  // CALCULAR: Total a pagar
+  const calculateTotal = () => {
+    if (!selectedLoan || lateFeeLoading) return 0;
+    return (
+      (parseFloat(selectedLoan.rentalFee) || 0) + 
+      (parseFloat(lateFeeloan) || 0) +
+      (parseFloat(selectedLoan.damageFee) || 0) +
+      (parseFloat(selectedLoan.repositionFee) || 0)
+    );
   };
 
   return (
@@ -617,12 +676,7 @@ const Home = () => {
                 value={
                   lateFeeLoading 
                     ? "Cargando..." 
-                    : `$${(
-                        (parseFloat(selectedLoan.rentalFee) || 0) + 
-                        (parseFloat(lateFeeloan) || 0) +
-                        (parseFloat(selectedLoan.damageFee) || 0) +
-                        (parseFloat(selectedLoan.repositionFee) || 0)
-                      )}`
+                    : `$${calculateTotal()}`
                 }
                 fullWidth
                 margin="normal"
@@ -630,32 +684,70 @@ const Home = () => {
                   '& .MuiInputBase-input': { 
                     fontWeight: 'bold', 
                     fontSize: '1.1rem',
-                    color: 'primary.main'
+                    color: isPaid ? '#4caf50' : 'primary.main',
+                    backgroundColor: isPaid ? '#e8f5e8' : 'transparent'
                   } 
                 }}
                 InputProps={{ readOnly: true }}
               />
+
+              {/* INDICADOR: Mostrar estado de pago */}
+              {isPaid && (
+                <Box sx={{ 
+                  mt: 2, 
+                  p: 2, 
+                  backgroundColor: '#e8f5e8', 
+                  borderRadius: 1,
+                  border: '2px solid #4caf50'
+                }}>
+                  <Typography 
+                    variant="body1" 
+                    align="center" 
+                    sx={{ 
+                      fontWeight: 'bold',
+                      color: '#2e7d32'
+                    }}
+                  >
+                    ✅ Pago realizado exitosamente - Ahora puede devolver la herramienta
+                  </Typography>
+                </Box>
+              )}
             </>
           )}
           
           {/* Botones en una sola fila */}
           <Stack direction="row" spacing={1} sx={{ mt: 3, justifyContent: "flex-end" }}>
             <Button 
-              variant="contained" 
-              onClick={handleCloseModal}>
+              variant="outlined" 
+              onClick={handleCloseModal}
+            >
               Cerrar
             </Button>
+            
+            {/* MODIFICADO: Botón Devolver solo habilitado si se pagó */}
             <Button 
               variant="contained" 
               color="success"
+              disabled={!isPaid} // CONDICIÓN: Solo habilitado si se pagó
               onClick={() => {
                 console.log("Devolver clicked", clientData.id, selectedLoan?.toolid);
                 returntool(clientData.id, selectedLoan.toolid);
                 handleCloseModal();
               }}
+              sx={{
+                backgroundColor: isPaid ? '#4caf50' : '#bdbdbd',
+                '&:hover': {
+                  backgroundColor: isPaid ? '#45a049' : '#bdbdbd'
+                },
+                '&:disabled': {
+                  backgroundColor: '#bdbdbd',
+                  color: '#757575'
+                }
+              }}
             >
-              Devolver
+              {isPaid ? "✅ Devolver" : "🔒 Debe Pagar Primero"}
             </Button>
+            
             <Button 
               variant="contained" 
               color="warning"
@@ -665,17 +757,30 @@ const Home = () => {
                 handleCloseModal();
               }}
             >
-              Reparar
+              🔧 Reparar
             </Button>
+            
+            {/* MODIFICADO: Botón Pagar deshabilitado si ya se pagó */}
             <Button 
               variant="contained" 
               color="primary"
+              disabled={isPaid || calculateTotal() === 0} // CONDICIÓN: Disabled si ya se pagó o si no hay monto
               onClick={() => {
                 console.log("Pagar clicked", selectedLoan?.id);
                 payAllFees(selectedLoan?.id);
               }}
+              sx={{
+                backgroundColor: isPaid ? '#bdbdbd' : (calculateTotal() === 0 ? '#bdbdbd' : '#1976d2'),
+                '&:hover': {
+                  backgroundColor: isPaid ? '#bdbdbd' : (calculateTotal() === 0 ? '#bdbdbd' : '#1565c0')
+                },
+                '&:disabled': {
+                  backgroundColor: '#bdbdbd',
+                  color: '#757575'
+                }
+              }}
             >
-              Pagar
+              {isPaid ? "✅ Ya Pagado" : (calculateTotal() === 0 ? "Sin Cargos" : "💳 Pagar")}
             </Button>
           </Stack>
         </Box>

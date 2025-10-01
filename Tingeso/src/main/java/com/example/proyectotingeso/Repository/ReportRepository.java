@@ -10,5 +10,11 @@ public interface ReportRepository extends JpaRepository<ReportEntity, Long> {
 
     public List<ReportEntity> findByDateBetweenOrderByDateDesc(LocalDate init, LocalDate fin);
 
+    boolean existsByIdLoanTool(Long idLoanTool);
+
+    public List<ReportEntity> findByName(String name);
+
+    boolean existsByIdClient(Long idClient);
+
 
 }

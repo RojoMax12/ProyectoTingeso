@@ -21,8 +21,15 @@ public class ReportController {
 
     @PreAuthorize(("hasAnyRole('USER','ADMIN')"))
     @PostMapping("/ReportLoan")
-    public ResponseEntity<List<ReportEntity>> createreport(){
+    public ResponseEntity<List<ReportEntity>> createreportloan(){
         List<ReportEntity> reports = reportServices.ReportLoanTools();
+        return ResponseEntity.ok(reports);
+    }
+
+    @PreAuthorize(("hasAnyRole('USER','ADMIN')"))
+    @PostMapping("/ReportClientLate")
+    public ResponseEntity<List<ReportEntity>> createreportclientlate(){
+        List<ReportEntity> reports = reportServices.ReportClientLoanLate();
         return ResponseEntity.ok(reports);
     }
 
@@ -39,4 +46,22 @@ public class ReportController {
         List<ReportEntity> reports = reportServices.ReportLoanTools();
         return ResponseEntity.ok(reports);
     }
+
+    @PreAuthorize(("hasAnyRole('USER','ADMIN')"))
+    @GetMapping("/AllReportsLoan")
+    public ResponseEntity<List<ReportEntity>> getreportloan(){
+        List<ReportEntity> reports = reportServices.GetAllReportLoanTools();
+        return ResponseEntity.ok(reports);
+    }
+
+    @PreAuthorize(("hasAnyRole('USER','ADMIN')"))
+    @GetMapping("/AllReportClientLate")
+    public ResponseEntity<List<ReportEntity>> getreportclientlate(){
+        List<ReportEntity> reports = reportServices.GetAllReportClientLoanLate();
+        return ResponseEntity.ok(reports);
+    }
+
+
+
+
 }

@@ -1,8 +1,12 @@
 import httpClient from "../http-commons";
 
 
-const createLoanReport = (data) => {
-    return httpClient.post("/api/report/ReportLoan", data);
+const createLoanReport = () => {
+    return httpClient.post("/api/report/ReportLoan");
+};
+
+const createClientLateReport = () => {
+    return httpClient.post("/api/report/ReportClientLate");
 };
 
 const reportdate = (initdate, enddate) => {
@@ -13,4 +17,12 @@ const getallReports = () => {
     return httpClient.get("/api/report/AllReports");
 };
 
-export default { createLoanReport, reportdate, getallReports };
+const getallReportsLoans = () => {
+    return httpClient.get("/api/report/AllReportsLoan");
+}
+
+const getallReportsClientLate = () => {
+    return httpClient.get("/api/report/AllReportClientLate");
+}
+
+export default { createLoanReport, reportdate, getallReports, getallReportsLoans, createClientLateReport, getallReportsClientLate };

@@ -62,6 +62,13 @@ public class ClientController {
         return ResponseEntity.ok(client);
     }
 
+    @PreAuthorize(("hasAnyRole('USER','ADMIN')"))
+    @GetMapping("/AllClientLoanLate")
+    ResponseEntity<List<ClientEntity>> getAllClientLoanLate(){
+        List<ClientEntity> clients = clientServices.getAllClientLoanLate();
+        return ResponseEntity.ok(clients);
+    }
+
 
 
 }

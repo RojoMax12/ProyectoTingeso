@@ -28,5 +28,8 @@ const getByid = id => {
     return httpClient.get(`/api/Client/${id}`);
 }
 
+const getAllClientLoanLate = () => {
+    return httpClient.get("/api/Client/AllClientLoanLate");
+}
 
-export default { getAll, create, update, deleteClient, getByRut, getByid};
+export default { getAll, create, update, deleteClient, getByRut, getByid, getAllClientLoanLate };

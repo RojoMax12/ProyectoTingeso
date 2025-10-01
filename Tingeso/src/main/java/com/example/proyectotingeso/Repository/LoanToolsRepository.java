@@ -20,4 +20,9 @@ public interface LoanToolsRepository extends JpaRepository<LoanToolsEntity, Long
 
     public List<LoanToolsEntity> findAllBystatusInAndRentalFeeGreaterThan(Collection<String> statuses, double rentalFee);
 
+    public List<LoanToolsEntity> findAllBystatus(String status);
+
+    public  List<LoanToolsEntity> findAllByClientidAndStatus(Long clientid, String status);
+
+
 }

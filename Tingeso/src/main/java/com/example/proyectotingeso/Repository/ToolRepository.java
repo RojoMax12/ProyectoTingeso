@@ -12,6 +12,9 @@ public interface ToolRepository extends JpaRepository<ToolEntity, Long> {
 
     public ToolEntity findByName(String name);
 
+    Optional<ToolEntity> findFirstByNameOrderByName(String name);
+
+
     public List<ToolEntity> findAllByName(String name);
 
     public Optional<ToolEntity> findById(Long id);

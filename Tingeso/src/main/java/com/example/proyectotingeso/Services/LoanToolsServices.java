@@ -85,20 +85,24 @@ public class LoanToolsServices {
                 .orElseThrow(() -> new IllegalArgumentException("Herramienta no encontrada"));
 
         // Obtener todos los préstamos del cliente
-        List<LoanToolsEntity> clientLoans = loanToolsRepository.findAllByClientid(loanToolsEntity.getClientid());
+        List<LoanToolsEntity> clientLoans = loanToolsRepository.findAllByClientidAndStatus(loanToolsEntity.getClientid(), "Active");
+        System.out.println("Prestamos activos" + clientLoans);
 
-        // Verificar si algún préstamo tiene una herramienta con el mismo nombre
-        boolean hasToolWithSameName = clientLoans.stream()
+        boolean hasToolWithSameNameAndCategory = clientLoans.stream()
                 .map(loan -> toolRepository.findById(loan.getToolid()).orElse(null))
                 .filter(tool -> tool != null)
-                .anyMatch(tool -> tool.getName().equals(currentTool.getName()));
+                .anyMatch(tool ->
+                        tool.getName().equals(currentTool.getName()) &&
+                                tool.getCategory().equals(currentTool.getCategory())
+                );
 
-        if (hasToolWithSameName) {
+        if (hasToolWithSameNameAndCategory) {
             throw new IllegalStateException(String.format(
-                    "El cliente ya tiene una herramienta prestada con el nombre: %s",
-                    currentTool.getName()
+                    "El cliente ya tiene una herramienta prestada con el nombre '%s' en la categoría '%s'",
+                    currentTool.getName(), currentTool.getCategory()
             ));
         }
+
 
         // 4. Validar fechas
         System.out.println("Fecha inicial recibida: " + loanToolsEntity.getInitiallenddate());
@@ -194,10 +198,11 @@ public class LoanToolsServices {
         LoanToolsEntity loantool = loanToolsRepository.findById(loantoolId)
                 .orElseThrow(() -> new IllegalStateException("No se encontró el préstamo con ID: " + loantoolId));
 
+        System.out.println(loantool);
         LocalDate today = LocalDate.now();
         System.out.println("Fecha actual: " + today);
         LocalDate returnDate = loantool.getFinalreturndate();
-        System.out.println("Fecha Retorno: " + today);
+        System.out.println("Fecha Retorno: " + returnDate);
 
         // Validar que la fecha de devolución esté configurada
         if (returnDate == null) {
@@ -237,7 +242,7 @@ public class LoanToolsServices {
             if (restrictedState == null) {
                 throw new IllegalStateException("Estado 'Restricted' no encontrado.");
             }
-
+            client.setState(restrictedState.getId());
             clientRepository.save(client);
         }
 
@@ -344,15 +349,7 @@ public class LoanToolsServices {
             System.out.println("[TRACE] El cliente tiene multas impagas. No se desbloquea.");
             return false;
         }
-
-        // 3. Verificar préstamos activos
-        boolean hasActiveLoans = loanToolsRepository.findAllByClientid(clientId).stream()
-                .anyMatch(loan -> "Active".equalsIgnoreCase(loan.getStatus()));
-
-        if (hasActiveLoans) {
-            System.out.println("[TRACE] El cliente aún tiene préstamos activos. No se desbloquea.");
-            return false;
-        }
+        
 
         // Si no hay restricciones, actualizar a Activo
         client.setState(active);
@@ -375,7 +372,7 @@ public class LoanToolsServices {
     }
 
     public int countActiveLoans(Long clientId) {
-        List<LoanToolsEntity> loans = loanToolsRepository.findAllByClientid(clientId);
+        List<LoanToolsEntity> loans = loanToolsRepository.findAllByClientidAndStatus(clientId, "Active");
         // Solo filtramos los préstamos que no han sido devueltos
         return loans.size();
     }
@@ -408,4 +405,9 @@ public class LoanToolsServices {
         return loanstoolstatus;
     }
 
+    public List<LoanToolsEntity> findallloanstoolstatusLate(){
+        List<LoanToolsEntity> loans = loanToolsRepository.findAllBystatus("Late");
+        return loans;
+    }
+    
 }
