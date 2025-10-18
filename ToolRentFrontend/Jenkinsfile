@@ -3,7 +3,7 @@ pipeline {
     stages{
         stage('Build Frontend'){
             steps{
-                checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/RojoMas12/ProyectoTingeso']])
+                checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/RojoMax12/ProyectoTingeso']])
                 dir("ToolRentFrontend"){
                     bat "npm install" // Use 'bat' for Windows agents or 'sh' for Unix/Linux agents
                     bat "npm run build" // Use 'bat' for Windows agents or 'sh' for Unix/Linux agents
