@@ -36,6 +36,12 @@ public class LoanToolsController {
     }
 
     @PreAuthorize(("hasAnyRole('USER','ADMIN')"))
+    @PutMapping("/register-damage/{idloan}")
+    public void registerDamageandReposition(@PathVariable Long idloan){
+        loanToolsServices.registerDamageFeeandReposition(idloan);
+    }
+
+    @PreAuthorize(("hasAnyRole('USER','ADMIN')"))
     @PutMapping("/return/{iduser}/{idtools}")
     public ResponseEntity<LoanToolsEntity> returnLoanTools(@PathVariable Long iduser, @PathVariable Long idtools) {
         LoanToolsEntity newLoanTools = loanToolsServices.returnLoanTools(iduser, idtools);

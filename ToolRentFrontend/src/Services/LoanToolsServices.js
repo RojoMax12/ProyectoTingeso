@@ -10,6 +10,11 @@ const getid = id => {
 
 }
 
+const registerDamageandReposition = idloan => {
+    return httpClient.put(`/api/LoanTools/register-damage/${idloan}`);
+}
+
+
 const updateTool = (iduser, idtools) => {
     return httpClient.put(`/api/LoanTools/return/${iduser}/${idtools}`);
 }
@@ -37,4 +42,4 @@ const payAllFees = idloan => {
     return httpClient.put(`/api/LoanTools/Pay/${idloan}`);
 }
 
-export default { create, getid, updateLoanTool, updateTool, deletes, getiduser, calculateLateFee, checkClients, payAllFees }
+export default { create, getid, updateLoanTool, updateTool, deletes, getiduser, calculateLateFee, checkClients, payAllFees, registerDamageandReposition }

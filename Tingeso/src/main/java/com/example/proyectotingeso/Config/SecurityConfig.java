@@ -76,7 +76,9 @@ public class SecurityConfig {
                 "http://192.168.4.178:8070",
                 "http://nginx-frontend:80",
                 "http://localhost:8090",
-                "http://127.0.0.1:8070"
+                "http://127.0.0.1:8070",
+                "http://localhost:5173"
+
         ));
 
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));

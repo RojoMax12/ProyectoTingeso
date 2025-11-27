@@ -282,6 +282,7 @@ public class LoanToolsServices {
 
     }
 
+
     public List<LoanToolsEntity> getAlluserLoanTools(Long userid) {
         return loanToolsRepository.findAllByClientid(userid) ;
     }
@@ -377,6 +378,34 @@ public class LoanToolsServices {
         return loans.size();
     }
 
+    public void registerDamageFeeandReposition(Long loanId) {
+
+        LoanToolsEntity loan = loanToolsRepository.findById(loanId)
+                .orElseThrow(() -> new RuntimeException("Loan not found: " + loanId));
+
+        ToolEntity tool = toolRepository.findById(loan.getToolid())
+                .orElseThrow(() -> new RuntimeException("Tool not found: " + loan.getToolid()));
+
+        AmountsandratesEntity rates = amountsandratesRepository.findById(3L)
+                .orElseThrow(() -> new RuntimeException("Rates not found"));
+
+        System.out.println(tool.getId());
+        System.out.println(tool.getStates());
+
+        // Si la herramienta está en reparación (3)
+        if (tool.getStates() == 3) {
+            loan.setRepositionFee(rates.getReparationcharge());
+            System.out.println("Llegue aqui");
+        }
+
+        // Si la herramienta está dañada (4)
+        if (tool.getStates() == 4) {
+            loan.setDamageFee((double) tool.getReplacement_cost());
+            System.out.println("Llegue aqui");
+        }
+
+        loanToolsRepository.save(loan); // ← IMPORTANTE
+    }
 
     public Boolean registerAllFeesPayment(Long loanId) {
         LoanToolsEntity loan = loanToolsRepository.findById(loanId).get();

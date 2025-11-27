@@ -46,6 +46,7 @@ const Home = () => {
   const [selectedLoan, setSelectedLoan] = useState(null);
   const [lateFeeloan, setLateFeeLoan] = useState(0);
   const [lateFeeLoading, setLateFeeLoading] = useState(false);
+  const [damageFee, setDamageFee] = useState(0);
   // NUEVO ESTADO: Para controlar si ya se pagó
   const [isPaid, setIsPaid] = useState(false);
 
@@ -108,9 +109,10 @@ const Home = () => {
 
         Promise.all(promises).then(loanToolsWithState => {
           const prestadasFiltradas = loanToolsWithState.filter(
-            lt => lt.toolState !== 1 && lt.toolState !== 3 && lt.toolState !== null
+            lt => lt.toolState !== 1 && lt.toolState !== null
           );
           setPrestadas(prestadasFiltradas);
+          console.log("Herramientas prestadas filtradas:", prestadasFiltradas);
 
           const detailsObj = {};
           prestadasFiltradas.forEach(lt => {
@@ -221,6 +223,7 @@ const Home = () => {
 
   const handleOpenModal = (loanTool) => {
     setSelectedLoan(loanTool);
+    TakeDamageLoan(loanTool.id);
     setOpenModal(true);
     setLateFeeLoading(true);
     setIsPaid(false); // RESET: Al abrir modal, resetear estado de pago
@@ -230,6 +233,7 @@ const Home = () => {
   const handleCloseModal = () => {
     setOpenModal(false);
     setSelectedLoan(null);
+    setDamageFee(0);
     setLateFeeLoan(0);
     setLateFeeLoading(false);
     setIsPaid(false); // RESET: Al cerrar modal, resetear estado de pago
@@ -329,6 +333,12 @@ const Home = () => {
       (parseFloat(selectedLoan.repositionFee) || 0)
     );
   };
+
+  const TakeDamageLoan = (idloan) => {
+    LoanToolServices.registerDamageandReposition(idloan)
+  };
+
+    
 
   return (
     <ThemeProvider theme={theme}>
@@ -602,6 +612,7 @@ const Home = () => {
             Detalles del Préstamo
             </Typography>
           {selectedLoan && (
+            console.log("Selected Loan in Modal:", selectedLoan),
             <>
               <Stack direction="row" spacing={2} sx={{ mb: 2, alignItems: "center" }}>
                 <TextField
@@ -669,6 +680,7 @@ const Home = () => {
                   margin="normal"
                   InputProps={{ readOnly: true }}
                 />
+                
               </Stack>
 
               <TextField

@@ -488,6 +488,7 @@ const LoanTool = () => {
                             >
                                 ❌ Cancelar
                             </Button>
+                            
                         </Stack>
                     </Stack>
                 </Paper>
