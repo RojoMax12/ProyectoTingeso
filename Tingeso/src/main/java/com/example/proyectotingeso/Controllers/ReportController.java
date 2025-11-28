@@ -34,6 +34,13 @@ public class ReportController {
     }
 
     @PreAuthorize(("hasAnyRole('USER','ADMIN')"))
+    @PostMapping("/ReportTopTools")
+    public ResponseEntity<List<ReportEntity>> createreporttoptools(){
+        List<ReportEntity> reports = reportServices.createTopToolsReport();
+        return ResponseEntity.ok(reports);
+    }
+
+    @PreAuthorize(("hasAnyRole('USER','ADMIN')"))
     @GetMapping("/Reports/{initdate}/{findate}")
     public ResponseEntity<List<ReportEntity>> getreportbydate(@PathVariable LocalDate initdate, @PathVariable LocalDate findate){
         List<ReportEntity> reports = reportServices.ReportfilterDate(initdate,findate);
@@ -58,6 +65,13 @@ public class ReportController {
     @GetMapping("/AllReportClientLate")
     public ResponseEntity<List<ReportEntity>> getreportclientlate(){
         List<ReportEntity> reports = reportServices.GetAllReportClientLoanLate();
+        return ResponseEntity.ok(reports);
+    }
+
+    @PreAuthorize(("hasAnyRole('USER','ADMIN')"))
+    @GetMapping("/AllReportTopTool")
+    public ResponseEntity<List<ReportEntity>> getreporttoptool(){
+        List<ReportEntity> reports = reportServices.ReportTopToolsAll();
         return ResponseEntity.ok(reports);
     }
 

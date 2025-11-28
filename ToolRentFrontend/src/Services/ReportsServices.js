@@ -9,6 +9,10 @@ const createClientLateReport = () => {
     return httpClient.post("/api/report/ReportClientLate");
 };
 
+const createTopToolsReport = () => {
+    return httpClient.post("/api/report/ReportTopTools");
+}
+
 const reportdate = (initdate, enddate) => {
     return httpClient.get(`/api/report/Reports/${initdate}/${enddate}`);
 };
@@ -25,4 +29,9 @@ const getallReportsClientLate = () => {
     return httpClient.get("/api/report/AllReportClientLate");
 }
 
-export default { createLoanReport, reportdate, getallReports, getallReportsLoans, createClientLateReport, getallReportsClientLate };
+const getTopToolsReport = () => {
+    return httpClient.get("/api/report/AllReportTopTool");
+}
+
+
+export default { createLoanReport, reportdate, getallReports, getallReportsLoans, createClientLateReport, getallReportsClientLate, createTopToolsReport, getTopToolsReport };

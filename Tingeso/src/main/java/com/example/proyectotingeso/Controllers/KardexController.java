@@ -60,5 +60,11 @@ public class KardexController {
         return ResponseEntity.ok(listkardex);
     }
 
+    @PreAuthorize(("hasAnyRole('USER','ADMIN')"))
+    @GetMapping("/TopTool")
+    public ResponseEntity<List<Object[]>> getToptoolKardex(){
+        List<Object[]> toptool = kardexServices.TopToolKardexTool();
+        return ResponseEntity.ok(toptool);
+    }
 
 }

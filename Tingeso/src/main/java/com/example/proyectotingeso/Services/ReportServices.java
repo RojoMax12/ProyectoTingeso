@@ -9,9 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @Service
 public class ReportServices {
@@ -23,10 +21,12 @@ public class ReportServices {
     LoanToolsServices loanToolsServices;
 
     @Autowired
-    ToolServices toolServices;
+    KardexServices kardexServices;
 
     @Autowired
     private ClientServices clientServices;
+
+
 
 
     public ReportEntity createReport(ReportEntity reportEntity) {
@@ -93,8 +93,39 @@ public class ReportServices {
 
     }
 
+    public List<ReportEntity> createTopToolsReport() {
+
+        List<Object[]> ranking = kardexServices.TopToolKardexTool();
+        List<ReportEntity> createdReports = new ArrayList<>();
+
+        for (Object[] row : ranking) {
+
+            Long toolId = ((Number) row[0]).longValue();   // idTool
+
+            // Crear reporte
+            ReportEntity newReport = new ReportEntity();
+            newReport.setIdTool(toolId);
+            newReport.setName("ReportTopTools");
+            newReport.setDate(LocalDate.now());
+
+            // Guardar en BD
+            ReportEntity saved = reportRepository.save(newReport);
+
+            createdReports.add(saved);
+        }
+
+        return createdReports;
+    }
+
+
+
     public List<ReportEntity> ReportfilterDate(LocalDate initdate, LocalDate findate){
         List<ReportEntity> reports = reportRepository.findByDateBetweenOrderByDateDesc(initdate, findate);
+        return reports;
+    }
+
+    public List<ReportEntity> ReportTopToolsAll(){
+        List<ReportEntity> reports = reportRepository.findByName("ReportTopTools");
         return reports;
     }
 
@@ -108,8 +139,6 @@ public class ReportServices {
         return reports;
     }
 
-    public List<ReportEntity> GetAllReport(){
-        return reportRepository.findAll();
-    }
+
 
 }

@@ -25,4 +25,9 @@ const kardexByDateRange = (inicio, fin) => {
 const kardexBytoolname = (nombre) => {
     return httpClient.get(`/api/kardex/History/${nombre}`);
 }
-export default {getAll, create, deletekarex, update, kardexByDateRange, kardexBytoolname}
+
+const getTopTools = () => {
+    return httpClient.get("/api/kardex/TopTool");
+}
+
+export default {getAll, create, deletekarex, update, kardexByDateRange, kardexBytoolname, getTopTools}
