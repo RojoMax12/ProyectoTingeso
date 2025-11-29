@@ -34,28 +34,34 @@ public class ClientServicesTest {
     @Test
     public void testCreateClient_whenRutExists_thenThrowException() {
         // Given
-        ClientEntity newClient = new ClientEntity(null, "Juan Perez", "juan@mail.com", "12345678-9", "555-1234", null);
-        when(clientRepository.findFirstByRut(newClient.getRut())).thenReturn(Optional.of(new ClientEntity()));
+        ClientEntity clientEntity = new ClientEntity();
+        clientEntity.setRut("12345678-9");
+
+        // Simular que ya existe un cliente con ese rut
+        when(clientRepository.findFirstByRut(clientEntity.getRut())).thenReturn(Optional.of(clientEntity));
 
         // When & Then
-        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
-            clientServices.createClient(newClient);
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            clientServices.createClient(clientEntity);
         });
-        assertEquals("Ya existe un cliente con ese RUT: 12345678-9", thrown.getMessage());
+        assertEquals("Ya existe un cliente con ese RUT: 12345678-9", exception.getMessage());
     }
 
     @Test
     public void testCreateClient_whenEmailExists_thenThrowException() {
         // Given
-        ClientEntity newClient = new ClientEntity(null, "Juan Perez", "juan@mail.com", "12345678-9", "555-1234", null);
-        when(clientRepository.findFirstByRut(newClient.getRut())).thenReturn(Optional.empty());
-        when(clientRepository.findFirstByEmail(newClient.getEmail())).thenReturn(Optional.of(new ClientEntity()));
+        ClientEntity clientEntity = new ClientEntity();
+        clientEntity.setEmail("existingemail@example.com");
+        clientEntity.setRut("12345678-9");
+
+        // Simular que ya existe un cliente con ese email
+        when(clientRepository.findFirstByEmail(clientEntity.getEmail())).thenReturn(Optional.of(clientEntity));
 
         // When & Then
-        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
-            clientServices.createClient(newClient);
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            clientServices.createClient(clientEntity);
         });
-        assertEquals("Ya existe un cliente con ese email: juan@mail.com", thrown.getMessage());
+        assertEquals("Ya existe un cliente con ese email: existingemail@example.com", exception.getMessage());
     }
 
     @Test
@@ -123,13 +129,13 @@ public class ClientServicesTest {
     }
 
     @Test
-    public void testDeleteClient_whenClientNotFound_thenThrowException() throws Exception {
+    public void testDeleteClient_whenClientNotFound_thenThrowException() {
         // Given
-        Long clientId = 1L;
-        doThrow(new Exception("Client not found")).when(clientRepository).deleteById(clientId);
+        Long clientId = 123L;
+        doThrow(new RuntimeException("Client not found")).when(clientRepository).deleteById(clientId);
 
         // When & Then
-        Exception exception = assertThrows(Exception.class, () -> {
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
             clientServices.deleteClient(clientId);
         });
         assertEquals("Client not found", exception.getMessage());
