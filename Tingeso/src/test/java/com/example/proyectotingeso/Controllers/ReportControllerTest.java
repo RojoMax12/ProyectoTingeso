@@ -120,22 +120,65 @@ public class ReportControllerTest {
 
     @Test
     @WithMockUser(roles = "USER")
-    public void getReportClientLoanLate_ShouldReturnClientsWithDelays() throws Exception {
+    public void getAllReportsLoan_ShouldReturnAllReportsLoan() throws Exception {
+        LocalDate today = LocalDate.now();
+
         // Crear los reportes que serán devueltos por el servicio
-        ReportEntity r1 = new ReportEntity(1L, "ReportClientLoanLate", LocalDate.now());
-        ReportEntity r2 = new ReportEntity(2L, "ReportClientLoanLate", LocalDate.now());
+        ReportEntity r1 = new ReportEntity(1L, "ReportLoanTools", today);
+        ReportEntity r2 = new ReportEntity(2L, "ReportLoanTools", today);
         List<ReportEntity> reports = Arrays.asList(r1, r2);
 
         // Simular la respuesta del servicio
-        given(reportServices.GetAllReportClientLoanLate()).willReturn(reports);
+        given(reportServices.GetAllReportLoanTools()).willReturn(reports);
 
         // Realizar la petición GET y verificar la respuesta
-        mockMvc.perform(get("/api/report/ClientLoanLate"))
+        mockMvc.perform(get("/api/report/AllReportsLoan"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)))
                 .andExpect(jsonPath("$[0].id", is(1)))
                 .andExpect(jsonPath("$[1].id", is(2)));
     }
 
+    @Test
+    @WithMockUser(roles = "USER")
+    public void getAllReportClientLate_ShouldReturnAllReportsClientLate() throws Exception {
+        LocalDate today = LocalDate.now();
+
+        // Crear los reportes que serán devueltos por el servicio
+        ReportEntity r1 = new ReportEntity(1L, "ReportClientLoanLate", today);
+        ReportEntity r2 = new ReportEntity(2L, "ReportClientLoanLate", today);
+        List<ReportEntity> reports = Arrays.asList(r1, r2);
+
+        // Simular la respuesta del servicio
+        given(reportServices.GetAllReportClientLoanLate()).willReturn(reports);
+
+        // Realizar la petición GET y verificar la respuesta
+        mockMvc.perform(get("/api/report/AllReportClientLate"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].id", is(1)))
+                .andExpect(jsonPath("$[1].id", is(2)));
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    public void getAllReportTopTool_ShouldReturnAllReportsTopTool() throws Exception {
+        LocalDate today = LocalDate.now();
+
+        // Crear los reportes que serán devueltos por el servicio
+        ReportEntity r1 = new ReportEntity(1L, "ReportTopTools", today);
+        ReportEntity r2 = new ReportEntity(2L, "ReportTopTools", today);
+        List<ReportEntity> reports = Arrays.asList(r1, r2);
+
+        // Simular la respuesta del servicio
+        given(reportServices.ReportTopToolsAll()).willReturn(reports);
+
+        // Realizar la petición GET y verificar la respuesta
+        mockMvc.perform(get("/api/report/AllReportTopTool"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].id", is(1)))
+                .andExpect(jsonPath("$[1].id", is(2)));
+    }
 
 }
