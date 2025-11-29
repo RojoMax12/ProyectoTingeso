@@ -21,12 +21,6 @@ import java.time.LocalDate;
 
         private String name;
 
-        private Long idLoanTool;
-
-        private Long idClient;
-
-        private Long idTool;
-
         private LocalDate date;
 
 }

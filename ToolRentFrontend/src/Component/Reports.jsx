@@ -1,31 +1,24 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from 'react-router-dom';
 import {
-  ThemeProvider, CssBaseline, Typography, Stack, Button,
-  Container, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText,
-  IconButton, Box, Paper, Table, TableBody, TableCell,
-  TableContainer, TableHead, TableRow, TextField, Chip
-} from "@mui/material";
-
+  ThemeProvider, CssBaseline, Typography, Box, Paper, Table, TableBody, TableCell,
+  TableContainer, TableHead, TableRow, Button, Modal, Container, Drawer, List,  ListItem, ListItemButton, ListItemIcon, ListItemText, IconButton} from "@mui/material";
+import { createTheme } from "@mui/material/styles";
+import { useKeycloak } from "@react-keycloak/web";
 import HomeIcon from "@mui/icons-material/Home";
 import BuildIcon from "@mui/icons-material/Build";
-import MenuIcon from "@mui/icons-material/Menu";
 import LibraryAddIcon from "@mui/icons-material/LibraryAdd";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import ContactsIcon from "@mui/icons-material/Contacts";
 import PersonAddAltIcon from '@mui/icons-material/PersonAddAlt';
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import ReportIcon from '@mui/icons-material/Report';
-
-import { createTheme } from "@mui/material/styles";
-import { useKeycloak } from "@react-keycloak/web";
-
 import ReportsService from "../Services/ReportsServices";
+import DataReportServices from "../Services/DataReportServices";
 import LoanToolsServices from "../Services/LoanToolsServices";
-import ToolServices from "../Services/ToolServices";
-import KardexServices from "../Services/KardexServices";
 import ClientServices from "../Services/ClientServices";
-
+import ToolServices from "../Services/ToolServices";
+import MenuIcon from "@mui/icons-material/Menu";
 
 const theme = createTheme({
   palette: {
@@ -33,20 +26,15 @@ const theme = createTheme({
   }
 });
 
-
 const Reports = () => {
 
-  // NAV
   const navigate = useNavigate();
-
-  // DRAWER
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [openModal, setOpenModal] = useState(false); // Estado para abrir/cerrar el modal
+  const [selectedReport, setSelectedReport] = useState(null); // Estado para los detalles del reporte seleccionado
+  const [dataDetails, setDataDetails] = useState(null); // Estado para almacenar los detalles del reporte
 
-  // FILTER DATES
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-
-  // DATA
+  // Estados de los reportes
   const [activeLoans, setActiveLoans] = useState([]);
   const [clientsWithDelays, setClientsWithDelays] = useState([]);
   const [topTools, setTopTools] = useState([]);
@@ -55,409 +43,498 @@ const Reports = () => {
   const { keycloak } = useKeycloak();
   const isAdmin = keycloak?.tokenParsed?.realm_access?.roles?.includes("ADMIN");
 
-
-  // SIDEBAR LIST
   const sidebarOptions = [
-    { text: "Inicio", icon: <HomeIcon />, path: "/" },
-    { text: "Herramientas", icon: <BuildIcon />, path: "/ToolList" },
-    { text: "Agregar Herramienta", icon: <LibraryAddIcon />, path: "/AddTools" },
-    { text: "Ver Kardex", icon: <AssessmentIcon />, path: "/Kardex" },
-    { text: "Registrar Cliente", icon: <PersonAddAltIcon />, path: "/RegisterClient" },
-    { text: "Clientes", icon: <ContactsIcon />, path: "/ClientList" },
-    { text: "Reportes", icon: <ReportIcon />, path: "/Reports" },
-    ...(isAdmin ? [{ text: "Configuraciones", icon: <AdminPanelSettingsIcon />, path: "/Configuration" }] : [])
-  ];
+          { text: "Inicio", icon: <HomeIcon />, path: "/" },
+          { text: "Herramientas", icon: <BuildIcon />, path: "/ToolList" },
+          { text: "Agregar Herramienta", icon: <LibraryAddIcon />, path: "/AddTools" },
+          { text: "Ver Kardex", icon: <AssessmentIcon />, path: "/Kardex" },
+          { text: "Registrar Cliente", icon: <PersonAddAltIcon />, path: "/RegisterClient" },
+          { text: "Clientes", icon: <ContactsIcon />, path: "/ClientList" },
+          { text: "Reportes", icon: <ReportIcon />, path: "/Reports" },
+          ...(isAdmin ? [{ text: "Configuraciones", icon: <AdminPanelSettingsIcon />, path: "/Configuration" }] : [])
+      ];
+  
 
-
-  // -----------------------------------------
-  // REPORT LOGIC
-  // -----------------------------------------
-
+  // Mostrar los reportes de préstamos activos
   const showActiveLoansReport = () => {
     ReportsService.getallReportsLoans()
-      .then(async (response) => {
-
+      .then((response) => {
         const reports = response.data || [];
-
-        const loans = await Promise.all(
-          reports.map(async (r) => {
-            try {
-              const loan = await LoanToolsServices.getid(r.idLoanTool);
-
-              const client = loan.data.clientid
-                ? await ClientServices.getByid(loan.data.clientid)
-                : { data: { name: "Sin cliente" } };
-
-              const tool = loan.data.toolid
-                ? await ToolServices.getid(loan.data.toolid)
-                : { data: { name: "Sin herramienta" } };
-
-              // Estado
-              const today = new Date();
-              const end = new Date(loan.data.finalreturndate);
-              const overdue = today > end;
-
-              return {
-                date: r.date,
-                client: client.data.name,
-                tool: tool.data.name,
-                startDate: loan.data.initiallenddate,
-                endDate: loan.data.finalreturndate,
-                status: overdue ? "Atrasado" : "Vigente"
-              };
-
-            } catch (e) {
-              return {
-                date: r.date,
-                client: "Error",
-                tool: "Error",
-                startDate: "-",
-                endDate: "-",
-                status: "Error"
-              };
-            }
-          })
-        );
-
-        setActiveLoans(loans);
+        setActiveLoans(reports);
+      })
+      .catch((error) => {
+        console.error("Error en la solicitud de reportes", error);
       });
   };
 
-
+  // Mostrar los reportes de clientes con atraso
   const showClientsLateReport = () => {
     ReportsService.getallReportsClientLate()
-      .then(async (response) => {
-
+      .then((response) => {
         const reports = response.data || [];
-
-        const clients = await Promise.all(
-          reports.map(async (r) => {
-            try {
-              const client = await ClientServices.getByid(r.idClient);
-              const tool = r.idTool
-                ? await ToolServices.getid(r.idTool)
-                : { data: { name: "Sin herramienta" } };
-
-              return {
-                date: r.date,
-                client: client.data.name,
-                email: client.data.email,
-                phone: client.data.phone,
-                toolName: tool.data.name
-              };
-            } catch {
-              return {
-                date: r.date,
-                client: "Error",
-                email: "-",
-                phone: "-",
-                toolName: "-"
-              };
-            }
-          })
-        );
-
-        setClientsWithDelays(clients);
+        setClientsWithDelays(reports);
+      })
+      .catch((error) => {
+        console.error("Error al obtener los reportes de clientes con atraso", error);
       });
   };
 
-
+  // Mostrar los reportes de las herramientas más prestadas
   const showTopToolsReport = () => {
     ReportsService.getTopToolsReport()
       .then((response) => {
         setTopTools(response.data);
-        console.log("Top tools report data:", response.data);
       })
       .catch((error) => {
         console.error("Error fetching top tools report:", error);
       });
   };
 
-  const topToolsReport = () => {
-  KardexServices.getTopTools()
-    .then((response) => {
+  const generatereportActiveLoan = () => { 
+    ReportsService.createLoanReport()
 
-      const formatted = response.data.map((row, index) => ({
-        ranking: index + 1,
-        name: row[0],          // nombre herramienta      // backend no lo envía
-        timesRented: row[1],   // total préstamos
-      }));
+  }
 
-      setTopTools(formatted);
-      console.log("Top tools formatted:", formatted);
-    })
-    .catch((error) => {
-      console.error("Error fetching top tools:", error);
-    });
-};
+  const generatereportClientLate = () => { 
+    ReportsService.createClientLateReport()
 
+  }
 
-  // GENERADORES
-  const createReportLoan = () => ReportsService.createLoanReport();
-  const createReportClientLate = () => ReportsService.createClientLateReport();
-  const createTopToolsReport = () => ReportsService.createTopToolsReport();
+  const generatereportTopTools = () => { 
+    ReportsService.createTopToolsReport()
+  }
 
+ 
 
-  // LOAD AUTOMATIC
+  // Cargar los reportes al montar el componente
   useEffect(() => {
     showActiveLoansReport();
     showClientsLateReport();
     showTopToolsReport();
   }, []);
 
+  // Función para obtener los detalles de los reportes de préstamos activos
+  const getselectedDataActiveLoan = (selectedid) => {
+    DataReportServices.getdataReportByIdreport(selectedid)
+      .then(async (response) => {
+        const dataReport = response.data;
+        if (Array.isArray(dataReport)) {
+          const loanDetails = await Promise.all(
+            dataReport.map(async (r) => {
+              if (r.idLoanTool) {
+                const loanResponse = await LoanToolsServices.getid(r.idLoanTool);
+                const clientResponse = await ClientServices.getByid(loanResponse.data.clientid);
+                const toolResponse = await ToolServices.getid(loanResponse.data.toolid);
 
-  // FORMAT
-  const formatCurrency = (clp) =>
-    new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP" }).format(clp);
+                return {
+                  loanstartdate: loanResponse.data.initiallenddate,
+                  loanfinaldate: loanResponse.data.finalreturndate,
+                  clientname: clientResponse.data.name,
+                  toolname: toolResponse.data.name,
+                  reportDate: r.date,
+                };
+              }
+            })
+          );
+          setDataDetails(loanDetails.filter((loan) => loan !== null));
+        }
+      })
+      .catch((error) => {
+        console.error("Error al obtener los detalles del reporte de préstamos activos", error);
+      });
+  };
 
+  // Función para obtener los detalles de los reportes de clientes con atraso
+  const getselectedDataClientsLateReport = (selectedid) => {
+    DataReportServices.getdataReportByIdreport(selectedid)
+      .then((response) => {
+        setDataDetails(response.data);
+      })
+      .catch((error) => {
+        console.error("Error al obtener los detalles de clientes con atraso", error);
+      });
+  };
 
-  // -----------------------------------------
-// ESTILO DE SECCIÓN
-// -----------------------------------------
-const sectionStyle = {
-  p: 4,
-  mb: 5,
-  borderRadius: 4,
-  backgroundColor: "#fff",
-  boxShadow: "0 4px 18px rgba(255,94,0,0.15)"
+  // Función para obtener los detalles de los reportes de herramientas más prestadas
+  const getselectedTopToolsReport = (selectedid) => {
+    DataReportServices.getdataReportByIdreport(selectedid)
+      .then(async (response) => {
+        const datareport = response.data;
+        console.log("reportes", datareport)
+        if (Array.isArray(datareport)) {
+          const topToolsDetails = await Promise.all(
+            datareport.map(async (r) => {
+              if (r.idTool) {
+                const toolResponse = await ToolServices.getid(r.idTool);
+                return {
+                  toolname: toolResponse.data.name,
+                  number_of_times_borrowed: r.number_of_times_borrowed
+
+                };
+              }
+            })
+          );
+          setDataDetails(topToolsDetails.filter((tool) => tool !== null));
+        }
+      })
+      .catch((error) => {
+        console.error("Error al obtener los detalles de herramientas más prestadas", error);
+      });
+  };
+
+  // Abrir modal con los detalles del reporte
+  const handleOpenModal = (report) => {
+    setSelectedReport(report); // Guardar el reporte seleccionado
+    setOpenModal(true); // Abrir el modal
+
+    // Dependiendo del tipo de reporte, obtener los detalles
+    if (report.name === "ReportLoanTools") {
+      getselectedDataActiveLoan(report.id);
+    } else if (report.name === "ReportClientLoanLate") {
+      getselectedDataClientsLateReport(report.id);
+    } else if (report.name === "ReportTopTools") {
+      getselectedTopToolsReport(report.id);
+    }
+  };
+
+  // Cerrar modal
+  const handleCloseModal = () => {
+    setOpenModal(false);
+    setSelectedReport(null);
+    setDataDetails(null);
+  };
+
+  // Modal de detalles
+  const renderReportDetails = () => {
+  if (dataDetails) {
+    if (selectedReport.name === "ReportLoanTools") {
+      return (
+        <Box>
+          <Typography variant="h6" sx={{ fontWeight: "bold", color: "rgba(255,94,0,1)", mb: 2 }}>
+            Detalles del Reporte de Préstamos Activos
+          </Typography>
+          {dataDetails.map((detail, index) => (
+            <Paper key={index} sx={{ p: 2, mb: 2, borderRadius: 2, boxShadow: 2 }}>
+              <Typography variant="body1" sx={{ mb: 1 }}>
+                <strong>Cliente:</strong> {detail.clientname}
+              </Typography>
+              <Typography variant="body1" sx={{ mb: 1 }}>
+                <strong>Herramienta:</strong> {detail.toolname}
+              </Typography>
+              <Typography variant="body1" sx={{ mb: 1 }}>
+                <strong>Fecha de Inicio:</strong> {detail.loanstartdate}
+              </Typography>
+              <Typography variant="body1" sx={{ mb: 1 }}>
+                <strong>Fecha de Finalización:</strong> {detail.loanfinaldate}
+              </Typography>
+            </Paper>
+          ))}
+        </Box>
+      );
+    } else if (selectedReport.name === "ReportTopTools") {
+      return (
+        <Box>
+          <Typography variant="h6" sx={{ fontWeight: "bold", color: "rgba(255,94,0,1)", mb: 2 }}>
+            Detalles del Reporte de Herramientas Más Prestadas
+          </Typography>
+          {dataDetails.map((detail, index) => (
+            <Paper key={index} sx={{ p: 2, mb: 2, borderRadius: 2, boxShadow: 2 }}>
+              <Typography variant="body1" sx={{ mb: 1 }}>
+                <strong>Herramienta:</strong> {detail.toolname}
+              </Typography>
+              <Typography variant="body1" sx={{ mb: 1 }}>
+                <strong>Cantidad:</strong> {detail.number_of_times_borrowed}
+              </Typography>
+            </Paper>
+          ))}
+        </Box>
+      );
+    }
+  }
+  return <Typography variant="body1" sx={{ fontStyle: "italic", color: "rgba(0,0,0,0.6)" }}>Cargando detalles...</Typography>;
 };
 
 
-// -----------------------------------------
-// COMPONENTE HEADER DE SECCIÓN
-// -----------------------------------------
-const SectionHeader = ({ title, count, onGenerate }) => (
-  <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
-    <Typography variant="h6" sx={{ fontWeight: "bold", color: "rgba(255,94,0,1)" }}>
-      {title} ({count})
-    </Typography>
-
-    <Button
-      variant="contained"
-      onClick={onGenerate}
-      sx={{ backgroundColor: "rgba(255,94,0,1)" }}
-    >
-      🔄 Generar Reporte
-    </Button>
-  </Box>
-);
-
-
-  // -----------------------------------------
-  // UI (ORDENADO Y BONITO)
-  // -----------------------------------------
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
 
-      {/* BOTÓN MENU */}
-      <IconButton
-        onClick={() => setDrawerOpen(true)}
-        sx={{
-          position: "fixed", top: 16, left: 16,
-          zIndex: 10, backgroundColor: "#FA812F",
-          '&:hover': { backgroundColor: "#FA812F" }
-        }}
-      >
-        <MenuIcon sx={{ color: "#fff" }} />
-      </IconButton>
+      <Box sx={{ p: 4, minHeight: "100vh" }}>
+                      {/* Botón menú hamburguesa */}
+                      <IconButton
+                          color="inherit"
+                          onClick={() => setDrawerOpen(true)}
+                          sx={{ 
+                              position: "fixed", 
+                              top: 16, 
+                              left: 16, 
+                              zIndex: 10, 
+                              backgroundColor: "#FA812F", 
+                              boxShadow: 3,
+                              '&:hover': { backgroundColor: "#FA812F" }
+                          }}
+                      >
+                          <MenuIcon sx={{ color: "#FEF3E2" }} />
+                      </IconButton>
 
+                    <Drawer
+                          open={drawerOpen}
+                          onClose={() => setDrawerOpen(false)}
+                          variant="temporary"
+                          sx={{
+                              [`& .MuiDrawer-paper`]: { 
+                                  width: 240, 
+                                  boxSizing: "border-box", 
+                                  backgroundColor: "#FEF3E2" 
+                              }
+                          }}
+                      >
+                          <List>
+                              {sidebarOptions.map((option) => (
+                                  <ListItem key={option.text} disablePadding>
+                                      <ListItemButton 
+                                          onClick={() => { 
+                                              navigate(option.path); 
+                                              setDrawerOpen(false); 
+                                          }}
+                                          sx={{
+                                              '&:hover': {
+                                                  backgroundColor: 'rgba(255, 94, 0, 0.1)',
+                                              },
+                                              borderRadius: 1,
+                                              mx: 1,
+                                              my: 0.5
+                                          }}
+                                      >
+                                          <ListItemIcon sx={{ color: "rgba(255, 94, 0, 1)", minWidth: 40 }}>
+                                              {option.icon}
+                                          </ListItemIcon>
+                                          <ListItemText 
+                                              primary={option.text}
+                                              sx={{
+                                                  '& .MuiListItemText-primary': {
+                                                      fontWeight: 500,
+                                                      fontSize: '0.95rem'
+                                                  }
+                                              }}
+                                          />
+                                      </ListItemButton>
+                                  </ListItem>
+                              ))}
+                          </List>
+                      </Drawer>
 
-      <Drawer
-                open={drawerOpen}
-                onClose={() => setDrawerOpen(false)}
-                variant="temporary"
-                sx={{
-                    [`& .MuiDrawer-paper`]: { 
-                        width: 240, 
-                        boxSizing: "border-box", 
-                        backgroundColor: "#FEF3E2" 
-                    }
-                }}
-            >
-                <List>
-                    {sidebarOptions.map((option) => (
-                        <ListItem key={option.text} disablePadding>
-                            <ListItemButton 
-                                onClick={() => { 
-                                    navigate(option.path); 
-                                    setDrawerOpen(false); 
-                                }}
-                                sx={{
-                                    '&:hover': {
-                                        backgroundColor: 'rgba(255, 94, 0, 0.1)',
-                                    },
-                                    borderRadius: 1,
-                                    mx: 1,
-                                    my: 0.5
-                                }}
-                            >
-                                <ListItemIcon sx={{ color: "#FA812F", minWidth: 40 }}>
-                                    {option.icon}
-                                </ListItemIcon>
-                                <ListItemText 
-                                    primary={option.text}
-                                    sx={{
-                                        '& .MuiListItemText-primary': {
-                                            fontWeight: 500,
-                                            fontSize: '0.95rem'
-                                        }
-                                    }}
-                                />
-                            </ListItemButton>
-                        </ListItem>
-                    ))}
-                </List>
-            </Drawer>
-
-
-      {/* CONTENIDO PRINCIPAL */}
+                    
+      <Typography variant="h3" align="center" sx={{ fontWeight: "bold", color: "rgba(255,94,0,1)", mb: 4 }}>
+        📊 Centro de Reportes
+      </Typography>
       <Container sx={{ mt: 10, mb: 5 }}>
+        {/* Reportes: Préstamos Activos */}
+        <Paper sx={{ p: 4, mb: 5, borderRadius: 4, backgroundColor: "#fff", boxShadow: "0 4px 18px rgba(255,94,0,0.15)" }}>
+          <Typography variant="h6" sx={{ fontWeight: "bold", color: "rgba(255,94,0,1)", mb: 3 }}>
+            📋 Préstamos Activos ({activeLoans.length})
 
-        {/* TITULO */}
-        <Typography
-          variant="h3"
-          align="center"
-          sx={{ fontWeight: "bold", color: "rgba(255,94,0,1)", mb: 4 }}
-        >
-          📊 Centro de Reportes
-        </Typography>
+            <Button 
+            onClick = {() => generatereportActiveLoan()} 
+            sx={{
+                backgroundColor: "rgba(255,94,0,1)",  // Color de fondo naranja
+                color: "#fff",  // Texto blanco
+                padding: "6px 12px",  // Ajusta el tamaño del botón
+                fontWeight: "bold",  // Establece el peso de la fuente
+                fontSize: "0.875rem",  // Ajusta el tamaño de la fuente
+                borderRadius: 2,  // Borde redondeado
+                "&:hover": {
+                  backgroundColor: "rgba(255,94,0,0.8)",  // Color al pasar el mouse (opaco)
+                },
+                translate: "12px"
+              }}>
 
-
-        {/* ================================
-            1) PRÉSTAMOS ACTIVOS
-        ================================ */}
-        <Paper sx={sectionStyle}>
-          <SectionHeader
-            title="📋 Préstamos Activos"
-            count={activeLoans.length}
-            onGenerate={createReportLoan}
-          />
-
+            Generar reporte
+            </Button>
+          </Typography>
+          
           <TableContainer>
             <Table>
               <TableHead>
                 <TableRow>
                   <TableCell>Fecha Reporte</TableCell>
-                  <TableCell>Cliente</TableCell>
-                  <TableCell>Herramienta</TableCell>
-                  <TableCell>Inicio</TableCell>
-                  <TableCell>Fin</TableCell>
-                  <TableCell>Estado</TableCell>
+                  <TableCell>Tipo Reporte</TableCell>
+                  <TableCell>Acción</TableCell>
                 </TableRow>
               </TableHead>
-
               <TableBody>
                 {activeLoans.map((loan, i) => (
                   <TableRow key={i}>
                     <TableCell>{loan.date}</TableCell>
-                    <TableCell>{loan.client}</TableCell>
-                    <TableCell>{loan.tool}</TableCell>
-                    <TableCell>{loan.startDate}</TableCell>
-                    <TableCell>{loan.endDate}</TableCell>
+                    <TableCell>Préstamos Activos</TableCell>
                     <TableCell>
-                      <Chip
-                        label={loan.status}
-                        sx={{
-                          backgroundColor:
-                            loan.status === "Atrasado" ? "#ffe5e5" : "#e8f5e9",
-                          color:
-                            loan.status === "Atrasado" ? "#c62828" : "#2e7d32",
-                          fontWeight: "bold"
-                        }}
-                      />
+                      <Button onClick={() => handleOpenModal(loan)}
+                      sx={{
+                        backgroundColor: "rgba(255,94,0,1)",  // Color de fondo naranja
+                        color: "#fff",  // Texto blanco
+                        padding: "6px 12px",  // Ajusta el tamaño del botón
+                        fontWeight: "bold",  // Establece el peso de la fuente
+                        fontSize: "0.875rem",  // Ajusta el tamaño de la fuente
+                        borderRadius: 2,  // Borde redondeado
+                        "&:hover": {
+                          backgroundColor: "rgba(255,94,0,0.8)",  // Color al pasar el mouse (opaco)
+                        }
+                        
+                      }}>
+                      Ver detalles</Button>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
-
             </Table>
           </TableContainer>
         </Paper>
 
+        {/* Reportes: Clientes con Atraso */}
+        <Paper sx={{ p: 4, mb: 5, borderRadius: 4, backgroundColor: "#fff", boxShadow: "0 4px 18px rgba(255,94,0,0.15)" }}>
+          <Typography variant="h6" sx={{ fontWeight: "bold", color: "rgba(255,94,0,1)", mb: 3 }}>
+            ⚠ Clientes con Atraso ({clientsWithDelays.length})
 
+            <Button 
+            onClick = {() => generatereportClientLate()} 
+            sx={{
+                backgroundColor: "rgba(255,94,0,1)",  // Color de fondo naranja
+                color: "#fff",  // Texto blanco
+                padding: "6px 12px",  // Ajusta el tamaño del botón
+                fontWeight: "bold",  // Establece el peso de la fuente
+                fontSize: "0.875rem",  // Ajusta el tamaño de la fuente
+                borderRadius: 2,  // Borde redondeado
+                "&:hover": {
+                  backgroundColor: "rgba(255,94,0,0.8)",  // Color al pasar el mouse (opaco)
+                },
+                translate: "12px"
+              }}>
 
-        {/* ================================
-            2) CLIENTES CON ATRASO
-        ================================ */}
-        <Paper sx={sectionStyle}>
-          <SectionHeader
-            title="⚠ Clientes con Atraso"
-            count={clientsWithDelays.length}
-            onGenerate={createReportClientLate}
-          />
-
+            Generar reporte
+            </Button>
+          </Typography>
           <TableContainer>
             <Table>
               <TableHead>
                 <TableRow>
                   <TableCell>Fecha Reporte</TableCell>
-                  <TableCell>Cliente</TableCell>
-                  <TableCell>Email</TableCell>
-                  <TableCell>Teléfono</TableCell>
+                  <TableCell>Tipo Reporte</TableCell>
+                  <TableCell>Acción</TableCell>
                 </TableRow>
               </TableHead>
-
               <TableBody>
-                {clientsWithDelays.map((c, i) => (
+                {clientsWithDelays.map((client, i) => (
                   <TableRow key={i}>
-                    <TableCell>{c.date}</TableCell>
-                    <TableCell>{c.client}</TableCell>
-                    <TableCell>{c.email}</TableCell>
-                    <TableCell>{c.phone}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Paper>
-
-
-        {/* ================================
-            3) TOP HERRAMIENTAS
-        ================================ */}
-        <Paper sx={sectionStyle}>
-          <SectionHeader
-            title="🏆 Herramientas Más Prestadas"
-            count={topTools.length}
-            onGenerate={createTopToolsReport}
-          />
-
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Ranking</TableCell>
-                  <TableCell>Herramienta</TableCell>
-                  <TableCell>Categoría</TableCell>
-                  <TableCell>Prestada</TableCell>
-                  <TableCell>Ingresos</TableCell>
-                </TableRow>
-              </TableHead>
-
-              <TableBody>
-                {topTools.map((t) => (
-                  <TableRow key={t.id}>
-                    <TableCell>#{t.ranking}</TableCell>
-                    <TableCell>{t.name}</TableCell>
-                    <TableCell>{t.category}</TableCell>
-                    <TableCell>{t.timesRented}</TableCell>
-                    <TableCell sx={{ fontWeight: "bold", color: "green" }}>
-                      {formatCurrency(t.revenue)}
+                    <TableCell>{client.date}</TableCell>
+                    <TableCell>Clientes con Atraso</TableCell>
+                    <TableCell>
+                      <Button onClick={() => handleOpenModal(client)} 
+                        sx={{
+                            backgroundColor: "rgba(255,94,0,1)",  // Color de fondo naranja
+                            color: "#fff",  // Texto blanco
+                            padding: "6px 12px",  // Ajusta el tamaño del botón
+                            fontWeight: "bold",  // Establece el peso de la fuente
+                            fontSize: "0.875rem",  // Ajusta el tamaño de la fuente
+                            borderRadius: 2,  // Borde redondeado
+                            "&:hover": {
+                              backgroundColor: "rgba(255,94,0,0.8)",  // Color al pasar el mouse (opaco)
+                            },
+                            translate: "12px"
+                          }}
+                        >Ver detalles</Button>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
-
             </Table>
           </TableContainer>
         </Paper>
 
+        {/* Reportes: Herramientas Más Prestadas */}
+        <Paper sx={{ p: 4, mb: 5, borderRadius: 4, backgroundColor: "#fff", boxShadow: "0 4px 18px rgba(255,94,0,0.15)" }}>
+          <Typography variant="h6" sx={{ fontWeight: "bold", color: "rgba(255,94,0,1)", mb: 3 }}>
+            🏆 Herramientas Más Prestadas ({topTools.length})
 
+            {/* Usando el componente Button de Material-UI */}
+            <Button
+              onClick={() => generatereportTopTools()}
+              sx={{
+                backgroundColor: "rgba(255,94,0,1)",  // Color de fondo naranja
+                color: "#fff",  // Texto blanco
+                padding: "6px 12px",  // Ajusta el tamaño del botón
+                fontWeight: "bold",  // Establece el peso de la fuente
+                fontSize: "0.875rem",  // Ajusta el tamaño de la fuente
+                borderRadius: 2,  // Borde redondeado
+                "&:hover": {
+                  backgroundColor: "rgba(255,94,0,0.8)",  // Color al pasar el mouse (opaco)
+                },
+                translate: "12px"
+              }}
+            >
+              Generar reporte
+            </Button>
+          </Typography>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Fecha Reporte</TableCell>
+                  <TableCell>Tipo Reporte</TableCell>
+                  <TableCell>Acción</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {topTools.map((tool, i) => (
+                  <TableRow key={i}>
+                    <TableCell>{tool.date}</TableCell>
+                    <TableCell>Herramientas Más Prestadas</TableCell>
+                    <TableCell>
+                      <Button onClick={() => handleOpenModal(tool)} sx={{
+                          backgroundColor: "rgba(255,94,0,1)",  // Color de fondo naranja
+                          color: "#fff",  // Texto blanco
+                          padding: "6px 12px",  // Ajusta el tamaño del botón
+                          fontWeight: "bold",  // Establece el peso de la fuente
+                          fontSize: "0.875rem",  // Ajusta el tamaño de la fuente
+                          borderRadius: 2,  // Borde redondeado
+                          "&:hover": {
+                            backgroundColor: "rgba(255,94,0,0.8)",  // Color al pasar el mouse (opaco)
+                          },
+                          translate: "12px"
+                        }}>
+                          Ver detalles
+                        </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
       </Container>
+
+      {/* Modal de detalles */}
+      <Modal open={openModal} onClose={handleCloseModal}>
+        <Box sx={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: 400,
+          backgroundColor: "white",
+          padding: 3,
+          boxShadow: 24,
+          borderRadius: 2,
+        }}>
+          {renderReportDetails()}
+          <Button onClick={handleCloseModal} sx={{ backgroundColor: "rgba(255,94,0,1)" }}>
+            Cerrar
+          </Button>
+        </Box>
+      </Modal>
+    </Box>
+
     </ThemeProvider>
   );
 };
-
 
 export default Reports;
