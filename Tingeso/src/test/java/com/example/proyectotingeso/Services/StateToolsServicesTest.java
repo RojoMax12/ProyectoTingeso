@@ -54,18 +54,38 @@ public class StateToolsServicesTest {
 
     @Test
     public void testCreateStateTools_whenStatesExist_thenDoNotCreate() {
-        // Simula que los estados ya existen
+        // Arrange: Entidades simuladas para los estados que *ya existen*
+        // Nota: Necesitas estas variables disponibles en tu clase de test (ej. @BeforeEach)
+        // Asumo que 'availableState' y 'borrowedState' ya están definidos.
+
+        // 1. Simula que el estado "Available" existe
         when(stateToolsRepository.findByName("Available")).thenReturn(availableState);
+
+        // 2. Simula que el estado "Borrowed" existe
         when(stateToolsRepository.findByName("Borrowed")).thenReturn(borrowedState);
+
+        // 🛑 3. Simula que el estado "In repair" existe
+        StateToolsEntity inRepairState = new StateToolsEntity(3L, "In repair");
+        when(stateToolsRepository.findByName("In repair")).thenReturn(inRepairState);
+
+        // 🛑 4. Simula que el estado "Discharged" existe
+        StateToolsEntity dischargedState = new StateToolsEntity(4L, "Discharged");
+        when(stateToolsRepository.findByName("Discharged")).thenReturn(dischargedState);
 
         // Llama al método createStateTools
         String result = stateToolsServices.createStateTools();
 
-        // Verifica que el mensaje indique que los estados ya están inicializados
+        // Assert: Verifica que el mensaje sea el de "ya iniciados"
         assertEquals("Estados de herramientas ya iniciados", result);
 
-        // Verifica que no se haya intentado crear ningún estado nuevo
+        // Assert: Verifica que no se haya intentado crear (guardar) ningún estado nuevo
         verify(stateToolsRepository, times(0)).save(any(StateToolsEntity.class));
+
+        // Assert Opcional: Verifica que findByName se llamó 4 veces (una por cada estado verificado)
+        verify(stateToolsRepository, times(1)).findByName("Available");
+        verify(stateToolsRepository, times(1)).findByName("Borrowed");
+        verify(stateToolsRepository, times(1)).findByName("In repair");
+        verify(stateToolsRepository, times(1)).findByName("Discharged");
     }
 
     @Test

@@ -33,16 +33,14 @@ public class UserServices {
     @Autowired
     AmountsandratesServices amountsandratesServices;
 
-    public ArrayList<UserEntity> getAllUsers() {
+    public List<UserEntity> getAllUsers() {
 
-        return (ArrayList<UserEntity>) userRepository.findAll();
+        return userRepository.findAll();
     }
 
 
     public boolean login(UserEntity user) {
         UserEntity existingUser = userRepository.findByRut(user.getRut());
-        System.out.println(userRepository.findByRut(user.getRut()));
-        System.out.println("existingUser: " + existingUser);
 
         if (existingUser == null) {
             return false; // No existe el usuario
@@ -51,7 +49,6 @@ public class UserServices {
         if (!existingUser.getRut().equals(user.getRut())) {
             return false;
         }
-
         // Comparar contraseña (versión insegura, solo para pruebas)
         if (!existingUser.getPassword().equals(user.getPassword())) {
             return false;

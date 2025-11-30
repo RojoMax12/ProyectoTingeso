@@ -29,46 +29,63 @@ public class ToolServices {
 
 
     public ToolEntity save(ToolEntity toolEntity) {
-        // 1. Validar datos de entrada
+
+        // 1. VALIDACIONES INICIALES BÁSICAS (solo si la data es claramente inválida)
         if (toolEntity.getName() == null || toolEntity.getName().trim().isEmpty()) {
             throw new IllegalArgumentException("El nombre de la herramienta es obligatorio");
         }
-        if (toolEntity.getCategory() == null || toolEntity.getCategory().trim().isEmpty()) {
-            throw new IllegalArgumentException("La categoría de la herramienta es obligatoria");
-        }
-        if (toolEntity.getReplacement_cost() <= 0) {
-            throw new IllegalArgumentException("El costo de reemplazo debe ser mayor a 0");
+
+        // Permitimos que el costo sea 0 o negativo AQUÍ para que el autocompletado pueda arreglarlo.
+        if (toolEntity.getReplacement_cost() < 0) {
+            throw new IllegalArgumentException("El costo de reemplazo no puede ser negativo");
         }
 
-        // 2. Crear nueva herramienta con datos base
+        // 2. CREAR NUEVA HERRAMIENTA con datos base
         ToolEntity newTool = new ToolEntity();
-        newTool.setName(toolEntity.getName().trim());
-        newTool.setCategory(toolEntity.getCategory().trim());
+        String toolName = toolEntity.getName().trim();
+        newTool.setName(toolName);
+
+        // Asignar categoría de entrada (maneja nulls para evitar NPE)
+        String inputCategory = toolEntity.getCategory();
+        newTool.setCategory(inputCategory != null ? inputCategory.trim() : null);
+
+        // Asignar costo de entrada
         newTool.setReplacement_cost(toolEntity.getReplacement_cost());
 
-        // 3. Buscar herramienta existente con el mismo nombre (OPCIONAL - para autocompletado)
-        Optional<ToolEntity> existingToolOpt = toolRepository.findFirstByNameOrderByName(toolEntity.getName().trim());
+        // 3. AUTOCOMPLETADO (Buscar herramienta existente)
+        Optional<ToolEntity> existingToolOpt = toolRepository.findFirstByNameOrderByName(toolName);
 
         if (existingToolOpt.isPresent()) {
             ToolEntity existingTool = existingToolOpt.get();
             System.out.println("💡 Herramienta similar encontrada: " + existingTool.getName());
 
-            // Opcional: Si el frontend no envió costo y existe una herramienta similar, usar su costo
-            if (toolEntity.getReplacement_cost() == 0) {
+            // Autocompletado de Costo: Si la entrada es 0 o menor, usa el costo existente
+            if (newTool.getReplacement_cost() <= 0) {
                 newTool.setReplacement_cost(existingTool.getReplacement_cost());
                 System.out.println("🔄 Autocompletando costo: $" + existingTool.getReplacement_cost());
             }
 
-            // Opcional: Si el frontend no envió categoría y existe una herramienta similar, usar su categoría
-            if (toolEntity.getCategory() == null || toolEntity.getCategory().trim().isEmpty()) {
+            // Autocompletado de Categoría: Si la categoría es nula/vacía, usa la existente
+            if (newTool.getCategory() == null || newTool.getCategory().isEmpty()) {
                 newTool.setCategory(existingTool.getCategory());
                 System.out.println("🔄 Autocompletando categoría: " + existingTool.getCategory());
             }
         } else {
-            System.out.println("ℹ️ Nueva herramienta única: " + toolEntity.getName());
+            System.out.println("ℹ️ Nueva herramienta única: " + toolName);
         }
 
-        // 4. Configurar estado de la herramienta
+        // 🛑 4. VALIDACIÓN FINAL DE DATOS ESENCIALES
+        // Validar CATEGORÍA después del autocompletado
+        if (newTool.getCategory() == null || newTool.getCategory().trim().isEmpty()) {
+            throw new IllegalArgumentException("La categoría de la herramienta es obligatoria");
+        }
+
+        // Validar COSTO después del autocompletado
+        if (newTool.getReplacement_cost() <= 0) {
+            throw new IllegalArgumentException("El costo de reemplazo debe ser mayor a 0");
+        }
+
+        // 5. Configurar estado de la herramienta
         if (toolEntity.getStates() != null) {
             newTool.setStates(toolEntity.getStates());
         } else {
@@ -80,14 +97,8 @@ public class ToolServices {
             newTool.setStates(availableState.getId());
         }
 
-        // 5. Guardar la nueva herramienta
+        // 6. Guardar la nueva herramienta
         ToolEntity savedTool = toolRepository.save(newTool);
-
-        System.out.println("✅ Herramienta guardada exitosamente: " +
-                "ID=" + savedTool.getId() +
-                ", Nombre=" + savedTool.getName() +
-                ", Categoría=" + savedTool.getCategory() +
-                ", Costo=$" + savedTool.getReplacement_cost());
 
         return savedTool;
     }

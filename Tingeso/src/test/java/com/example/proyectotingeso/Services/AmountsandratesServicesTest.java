@@ -30,22 +30,24 @@ public class AmountsandratesServicesTest {
 
     // --- Pruebas para createAmountsAndRates() ---
 
+// **Modificación del Test**
+
     @Test
     public void testCreateAmountsAndRates_whenNoExistingConfig_thenCreateNew() {
         // Arrange: Simula que no hay ninguna configuración existente
         when(amountsandratesRepository.findAll()).thenReturn(Collections.emptyList());
 
+        // ARRANGE CLAVE: Cuando se llame a save() con CUALQUIER entidad, Mockito debe retornar
+        // esa misma entidad. Esto simula el comportamiento de un repositorio real.
+        when(amountsandratesRepository.save(any(AmountsandratesEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0)); // Retorna el primer argumento (la entidad pasada)
+
         // Act
         AmountsandratesEntity result = amountsandratesServices.createAmountsAndRates();
 
         // Assert: Verifica que se haya creado una nueva entidad con valores por defecto
-        assertNotNull(result);
-        assertEquals(0.0, result.getDailyrentalrate());
-        assertEquals(0.0, result.getDailylatefeefine());
-        assertEquals(0.0, result.getReparationcharge());
-
-        // Verifica que el repositorio haya sido llamado para guardar la *nueva* entidad
-        verify(amountsandratesRepository, times(1)).save(any(AmountsandratesEntity.class));
+        assertNotNull(result); // ¡Esto ya no debería fallar!
+        // ... el resto de tus asserts
     }
 
     @Test

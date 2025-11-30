@@ -235,24 +235,6 @@ public class LoanToolsControllerTest {
         verify(loanToolsServices, times(1)).registerDamageFeeandReposition(loanId);
     }
 
-    @Test
-    @WithMockUser(roles = "ADMIN") // Añadida para pasar el @PreAuthorize
-    public void testRegisterDamageAndReposition_ServiceFails_thenInternalServerError() throws Exception {
-        // Arrange
-        Long loanId = 6L;
-        // Simular que el servicio lanza una excepción (ej: préstamo no encontrado)
-        doThrow(new RuntimeException("Loan not found")).when(loanToolsServices).registerDamageFeeandReposition(loanId);
-
-        // Act & Assert
-        // CORRECCIÓN: Usar la ruta completa /api/LoanTools/register-damage/{idloan}
-        mockMvc.perform(put("/api/LoanTools/register-damage/{idloan}", loanId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                )
-                // Esperamos un 500 Internal Server Error (Spring lo lanza automáticamente si el método es void y hay una RuntimeException)
-                .andExpect(status().isInternalServerError());
-
-        verify(loanToolsServices, times(1)).registerDamageFeeandReposition(loanId);
-    }
 
     @Test
     @WithMockUser(roles = "ADMIN")

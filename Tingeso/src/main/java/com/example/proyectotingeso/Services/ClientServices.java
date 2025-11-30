@@ -9,6 +9,7 @@ import com.example.proyectotingeso.Repository.StateUsersRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -62,14 +63,10 @@ public class ClientServices {
         return clientRepository.save(clientEntity);
     }
 
-    public boolean deleteClient(Long id) throws Exception {
-        try {
-            clientRepository.deleteById(id);
-            return true;
+    public boolean deleteClient(Long id) {
+        clientRepository.deleteById(id);
+        return true;
 
-        } catch (Exception e) {
-            throw new Exception(e.getMessage());
-        }
     }
 
     public ClientEntity getClientById(Long id) {
@@ -79,12 +76,16 @@ public class ClientServices {
     public List<ClientEntity> getAllClientLoanLate() {
         List<LoanToolsEntity> loanToolsEntities = loanToolsServices.findallloanstoolstatusLate();
 
+        if (loanToolsEntities.isEmpty()) {
+            return Collections.emptyList(); // Retorna inmediatamente si no hay préstamos atrasados
+        }
+
         // Sacar los IDs de cliente
         List<Long> clientIds = loanToolsEntities.stream()
-                .map(loan -> loan.getClientid())   // aquí uso lambda, no method reference
+                .map(LoanToolsEntity::getClientid)
                 .collect(Collectors.toList());
 
-        // Buscar todos los clientes con esos IDs
+        // Solo se llama al repositorio si hay IDs para buscar
         return clientRepository.findAllById(clientIds);
     }
 

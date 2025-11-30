@@ -5,6 +5,8 @@ import com.example.proyectotingeso.Repository.StateToolsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 public class StateToolsServices {
 
@@ -51,11 +53,14 @@ public class StateToolsServices {
     }
 
     public boolean deleteStateToolsById(Long id) throws Exception {
-        try {
+        Optional<StateToolsEntity> optionalState = StateToolsRepository.findById(id);
+
+        if (optionalState.isPresent()) {
             StateToolsRepository.deleteById(id);
             return true;
-        } catch (Exception e) {
-            throw new Exception(e.getMessage());
+        } else {
+            // Lanzar la excepción esperada por el test
+            throw new Exception("El estado con ID " + id + " no existe.");
 
         }
     }

@@ -1,15 +1,13 @@
 package com.example.proyectotingeso.Services;
 
+import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.example.proyectotingeso.Entity.StateUsersEntity;
 import com.example.proyectotingeso.Repository.StateUsersRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
+import org.mockito.*;
 
 import java.util.Arrays;
 import java.util.List;
@@ -23,130 +21,185 @@ public class StateUsersServicesTest {
     @InjectMocks
     private StateUsersServices stateUsersServices;
 
-    private StateUsersEntity activeState;
-    private StateUsersEntity restrictedState;
+    // Entidades simuladas para los estados conocidos
+    private final StateUsersEntity activeState = new StateUsersEntity(1L, "Active");
+    private final StateUsersEntity restrictedState = new StateUsersEntity(2L, "Restricted");
 
     @BeforeEach
     public void setup() {
         MockitoAnnotations.openMocks(this);
     }
 
-
-    @BeforeEach
-    void setUp() {
-        // Inicializa los objetos StateUsersEntity
-        activeState = new StateUsersEntity(1L, "Active");
-        restrictedState = new StateUsersEntity(2L, "Restricted");
-    }
+    // =========================================================================
+    // 1. Tests para CreateStateUsers()
+    // =========================================================================
 
     @Test
-    public void testCreateStateUsers_whenStatesNotExist_thenCreateStates() {
-        // Simula que no existen los estados "Active" y "Restricted"
-        when(stateUsersRepository.findByName("Active")).thenReturn(null);
-        when(stateUsersRepository.findByName("Restricted")).thenReturn(null);
+    void testCreateStateUsers_NoStatesExist_CreatesBothStates() {
+        // Arrange: Simular que ningún estado existe (findByName devuelve null)
+        when(stateUsersRepository.findByName(anyString())).thenReturn(null);
 
-        // Llama al método createStateUsers
+        // Simular el save devolviendo la entidad (simulando que se asigna un ID)
+        when(stateUsersRepository.save(any(StateUsersEntity.class)))
+                .thenAnswer(invocation -> {
+                    StateUsersEntity state = invocation.getArgument(0);
+                    if ("Active".equals(state.getName())) state.setId(1L);
+                    if ("Restricted".equals(state.getName())) state.setId(2L);
+                    return state;
+                });
+
+        // Act
         String result = stateUsersServices.CreateStateUsers();
 
-        // Verifica que los estados sean creados
-        assertEquals("Estados creados con exito", result);
+        // Assert
+        assertEquals("Estados creados con exito", result, "Debe indicar éxito en la creación.");
 
-        // Verifica que los métodos de guardado hayan sido llamados para los dos estados
+        // Verificar que findByName fue llamado para ambos
+        verify(stateUsersRepository, times(1)).findByName("Active");
+        verify(stateUsersRepository, times(1)).findByName("Restricted");
+
+        // Verificar que save fue llamado dos veces
         verify(stateUsersRepository, times(2)).save(any(StateUsersEntity.class));
     }
 
     @Test
-    public void testCreateStateUsers_whenStatesExist_thenDoNotCreate() {
-        // Simula que los estados "Active" y "Restricted" ya existen
+    void testCreateStateUsers_OnlyOneStateExists_CreatesMissingState() {
+        // Arrange: Simular que 'Active' existe, pero 'Restricted' no
         when(stateUsersRepository.findByName("Active")).thenReturn(activeState);
-        when(stateUsersRepository.findByName("Restricted")).thenReturn(restrictedState);
+        when(stateUsersRepository.findByName("Restricted")).thenReturn(null);
 
-        // Llama al método createStateUsers
+        // Act
         String result = stateUsersServices.CreateStateUsers();
 
-        // Verifica que el mensaje indique que los estados ya están inicializados
-        assertEquals("Estados creados", result);
+        // Assert
+        assertEquals("Estados creados con exito", result, "Debe indicar éxito en la creación.");
 
-        // Verifica que no se haya intentado guardar un estado nuevo
-        verify(stateUsersRepository, times(0)).save(any(StateUsersEntity.class));
+        // Verificar que save fue llamado una vez (solo para 'Restricted')
+        verify(stateUsersRepository, times(1)).save(argThat(state -> "Restricted".equals(state.getName())));
     }
 
     @Test
-    public void testGetStateUsersById_whenStateExists_thenReturnState() {
-        // Simula que el estado "Active" existe en el repositorio
-        when(stateUsersRepository.findById(1L)).thenReturn(Optional.of(activeState));
+    void testCreateStateUsers_AllStatesExist_ReturnsAlreadyCreatedMessage() {
+        // Arrange: Simular que ambos estados existen
+        when(stateUsersRepository.findByName("Active")).thenReturn(activeState);
+        when(stateUsersRepository.findByName("Restricted")).thenReturn(restrictedState);
 
-        // Llama al método getStateUsersById
-        StateUsersEntity result = stateUsersServices.getStateUsersById(1L);
+        // Act
+        String result = stateUsersServices.CreateStateUsers();
 
-        // Verifica que el estado sea el esperado
+        // Assert
+        // NOTA: El mensaje esperado es "Estados creados" (que es confuso, pero es el que está en el servicio)
+        assertEquals("Estados creados", result, "Debe indicar que los estados ya estaban creados.");
+
+        // Verificar que save nunca fue llamado
+        verify(stateUsersRepository, never()).save(any(StateUsersEntity.class));
+    }
+
+
+    // =========================================================================
+    // 2. Tests para getStateUsersById(Long id)
+    // =========================================================================
+
+    @Test
+    void testGetStateUsersById_StateExists_ReturnsState() {
+        // Arrange
+        Long id = 1L;
+        when(stateUsersRepository.findById(id)).thenReturn(Optional.of(activeState));
+
+        // Act
+        StateUsersEntity result = stateUsersServices.getStateUsersById(id);
+
+        // Assert
         assertNotNull(result);
+        assertEquals(id, result.getId());
         assertEquals("Active", result.getName());
     }
 
     @Test
-    public void testGetStateUsersById_whenStateDoesNotExist_thenReturnNull() {
-        // Simula que el estado no se encuentra
-        when(stateUsersRepository.findById(99L)).thenReturn(Optional.empty());
+    void testGetStateUsersById_StateNotFound_ReturnsNull() {
+        // Arrange
+        Long id = 99L;
+        when(stateUsersRepository.findById(id)).thenReturn(Optional.empty());
 
-        // Llama al método getStateUsersById
-        StateUsersEntity result = stateUsersServices.getStateUsersById(99L);
+        // Act
+        StateUsersEntity result = stateUsersServices.getStateUsersById(id);
 
-        // Verifica que el resultado sea null
+        // Assert
         assertNull(result);
     }
 
-    @Test
-    public void testGetAllStateUsers_whenStatesExist_thenReturnStateList() {
-        // Simula que existen los estados "Active" y "Restricted"
-        when(stateUsersRepository.findAll()).thenReturn(Arrays.asList(activeState, restrictedState));
+    // =========================================================================
+    // 3. Tests para getAllStateUsers()
+    // =========================================================================
 
-        // Llama al método getAllStateUsers
+    @Test
+    void testGetAllStateUsers_ReturnsListOfStates() {
+        // Arrange
+        List<StateUsersEntity> expectedList = Arrays.asList(activeState, restrictedState);
+        when(stateUsersRepository.findAll()).thenReturn(expectedList);
+
+        // Act
         List<StateUsersEntity> result = stateUsersServices.getAllStateUsers();
 
-        // Verifica que se haya recuperado la lista de estados
+        // Assert
         assertNotNull(result);
         assertEquals(2, result.size());
-        assertTrue(result.contains(activeState));
-        assertTrue(result.contains(restrictedState));
+        assertEquals("Active", result.get(0).getName());
+        verify(stateUsersRepository, times(1)).findAll();
     }
 
+    // =========================================================================
+    // 4. Tests para updateStateUsers(StateUsersEntity)
+    // =========================================================================
+
     @Test
-    public void testUpdateStateUsers_whenStateExists_thenUpdateState() {
-        // Simula que el estado "Active" existe
-        when(stateUsersRepository.save(activeState)).thenReturn(activeState);
+    void testUpdateStateUsers_Success_ReturnsUpdatedState() {
+        // Arrange
+        StateUsersEntity stateToUpdate = new StateUsersEntity(1L, "Suspended");
+        when(stateUsersRepository.save(stateToUpdate)).thenReturn(stateToUpdate);
 
-        // Llama al método updateStateUsers
-        StateUsersEntity updatedState = new StateUsersEntity(1L, "Updated Active");
-        StateUsersEntity result = stateUsersServices.updateStateUsers(updatedState);
+        // Act
+        StateUsersEntity result = stateUsersServices.updateStateUsers(stateToUpdate);
 
-        // Verifica que el estado haya sido actualizado correctamente
+        // Assert
         assertNotNull(result);
-        assertEquals("Updated Active", result.getName());
-
-        // Verifica que el repositorio haya sido llamado para guardar el estado actualizado
-        verify(stateUsersRepository, times(1)).save(updatedState);
+        assertEquals("Suspended", result.getName());
+        verify(stateUsersRepository, times(1)).save(stateToUpdate);
     }
 
+    // =========================================================================
+    // 5. Tests para deleteStateUsersById(Long id)
+    // =========================================================================
+
     @Test
-    public void testDeleteStateUsersById_whenStateExists_thenDeleteState() throws Exception {
-        // Simula que el estado "Active" existe
-        when(stateUsersRepository.findById(1L)).thenReturn(Optional.of(activeState));
+    void testDeleteStateUsersById_Success_ReturnsTrue() throws Exception {
+        // Arrange
+        Long id = 1L;
+        // Simular que la operación de eliminación es exitosa
+        doNothing().when(stateUsersRepository).deleteById(id);
 
-        // Llama al método deleteStateUsersById
-        boolean result = stateUsersServices.deleteStateUsersById(1L);
+        // Act
+        boolean result = stateUsersServices.deleteStateUsersById(id);
 
-        // Verifica que el estado haya sido eliminado
+        // Assert
         assertTrue(result);
-        verify(stateUsersRepository, times(1)).deleteById(1L);
+        verify(stateUsersRepository, times(1)).deleteById(id);
     }
 
     @Test
-    public void testDeleteStateUsersById_whenStateDoesNotExist_thenThrowException() {
-        // Simula que el estado no existe
-        when(stateUsersRepository.findById(99L)).thenReturn(Optional.empty());
+    void testDeleteStateUsersById_Failure_ThrowsException() {
+        // Arrange
+        Long id = 1L;
+        String errorMessage = "Cannot delete due to foreign key constraint";
+        // Simular que deleteById lanza una excepción (ej. por FK)
+        doThrow(new RuntimeException(errorMessage)).when(stateUsersRepository).deleteById(id);
 
-        // Act & Assert: Verifica que se lance una excepción al intentar eliminar un estado que no existe
-        assertThrows(Exception.class, () -> stateUsersServices.deleteStateUsersById(99L));
+        // Act & Assert
+        Exception exception = assertThrows(Exception.class, () -> {
+            stateUsersServices.deleteStateUsersById(id);
+        });
+
+        assertTrue(exception.getMessage().contains(errorMessage));
+        verify(stateUsersRepository, times(1)).deleteById(id);
     }
 }

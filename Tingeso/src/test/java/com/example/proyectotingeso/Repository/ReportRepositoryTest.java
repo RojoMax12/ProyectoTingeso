@@ -1,58 +1,130 @@
 package com.example.proyectotingeso.Repository;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.example.proyectotingeso.Entity.ReportEntity;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
-import java.util.Arrays;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @DataJpaTest
 @ActiveProfiles("test")
 public class ReportRepositoryTest {
 
-    @MockBean
+    @Autowired
     private ReportRepository reportRepository;
 
+    @Autowired
+    private TestEntityManager entityManager;
+
+    // Fechas de prueba
+    private final LocalDate dateToday = LocalDate.of(2025, 11, 30);
+    private final LocalDate dateYesterday = dateToday.minusDays(1);
+    private final LocalDate dateLastWeek = dateToday.minusWeeks(1);
+    private final LocalDate dateNextWeek = dateToday.plusWeeks(1);
+
+    // Entidades de prueba
+    private ReportEntity reportA;
+    private ReportEntity reportB;
+    private ReportEntity reportC;
+    private ReportEntity reportD;
+    private ReportEntity reportE;
+
+    @BeforeEach
+    void setup() {
+        // Constructor simulado: (id, name, description, date)
+
+        // Report A: "Sales Summary", Hoy
+        reportA = new ReportEntity(null, "Sales Summary", dateToday);
+        entityManager.persistAndFlush(reportA);
+
+        // Report B: "Inventory Update", Ayer
+        reportB = new ReportEntity(null, "Inventory Update",  dateYesterday);
+        entityManager.persistAndFlush(reportB);
+
+        // Report C: "Sales Summary", Hace una semana (mismo nombre que A)
+        reportC = new ReportEntity(null, "Sales Summary", dateLastWeek);
+        entityManager.persistAndFlush(reportC);
+
+        // Report D: "Financial Audit", Mañana (fuera del rango principal)
+        reportD = new ReportEntity(null, "Financial Audit", dateNextWeek);
+        entityManager.persistAndFlush(reportD);
+
+        // Report E: "Inventory Update", Hoy (mismo nombre que B)
+        reportE = new ReportEntity(null, "Inventory Update", dateToday);
+        entityManager.persistAndFlush(reportE);
+    }
+
+    // --- Métodos del Repository ---
+
+    // 1. findByDateBetweenOrderByDateDesc(LocalDate init, LocalDate fin)
+
     @Test
-    public void testFindByDateBetweenOrderByDateDesc() {
-        // Crear algunos reportes de ejemplo
-        LocalDate start = LocalDate.of(2025, 9, 1);
-        LocalDate end = LocalDate.of(2025, 9, 30);
-        ReportEntity r1 = new ReportEntity(1L, "ReportLoanTools", start);
-        ReportEntity r2 = new ReportEntity(2L, "ReportLoanTools", end);
+    void testFindByDateBetween_ReturnsReportsInDateRangeSortedDesc() {
+        // Arrange
+        // Rango: Desde hace 10 días hasta hoy (incluye C, B, A, E)
+        LocalDate initDate = dateToday.minusDays(10);
+        LocalDate finalDate = dateToday;
 
-        // Guardar los reportes en la base de datos
-        reportRepository.saveAll(Arrays.asList(r1, r2));
+        // Act
+        List<ReportEntity> reports = reportRepository.findByDateBetweenOrderByDateDesc(initDate, finalDate);
 
-        // Ejecutar el método findByDateBetweenOrderByDateDesc
-        List<ReportEntity> reports = reportRepository.findByDateBetweenOrderByDateDesc(start, end);
+        // Assert
+        assertEquals(4, reports.size(), "Debe retornar 4 reportes dentro del rango.");
 
-        // Verificar que la lista de reportes es la esperada
-        assertEquals(2, reports.size());
-        assertEquals("ReportLoanTools", reports.get(0).getName());
+        // Verificación del orden descendente (el más reciente primero)
+        // El primer reporte debe ser de hoy
+        assertEquals(dateToday, reports.get(0).getDate());
+
+        // El último reporte debe ser el más antiguo en el rango (C)
+        assertEquals(dateLastWeek, reports.get(reports.size() - 1).getDate());
     }
 
     @Test
-    public void testFindByName() {
-        // Crear un reporte de ejemplo
-        ReportEntity report = new ReportEntity(1L, "ReportLoanTools", LocalDate.now());
-        reportRepository.save(report);
+    void testFindByDateBetween_ReturnsEmptyListWhenNoReportsInDateRange() {
+        // Arrange
+        // Rango: Un mes en el futuro
+        LocalDate initDate = dateToday.plusMonths(1);
+        LocalDate finalDate = dateToday.plusMonths(1).plusDays(5);
 
-        // Ejecutar el método findByName
-        List<ReportEntity> reports = reportRepository.findByName("ReportLoanTools");
+        // Act
+        List<ReportEntity> reports = reportRepository.findByDateBetweenOrderByDateDesc(initDate, finalDate);
 
-        // Verificar que el nombre de los reportes es correcto
-        assertEquals(1, reports.size());
-        assertEquals("ReportLoanTools", reports.get(0).getName());
+        // Assert
+        assertTrue(reports.isEmpty(), "No debe retornar reportes para un rango futuro.");
     }
+
+    // 2. findByName(String name)
+
+    @Test
+    void testFindByName_MultipleReportsFound_ReturnsAllMatchingReports() {
+        // Arrange
+        String targetName = "Sales Summary"; // Reportes A y C
+
+        // Act
+        List<ReportEntity> reports = reportRepository.findByName(targetName);
+
+        // Assert
+        assertEquals(2, reports.size(), "Debe retornar los dos reportes con el mismo nombre.");
+        assertTrue(reports.stream().allMatch(r -> targetName.equals(r.getName())));
+    }
+
+    @Test
+    void testFindByName_ReportNotFound_ReturnsEmptyList() {
+        // Arrange
+        String targetName = "HR Analysis";
+
+        // Act
+        List<ReportEntity> reports = reportRepository.findByName(targetName);
+
+        // Assert
+        assertTrue(reports.isEmpty(), "No debe retornar reportes para un nombre que no existe.");
+    }
+
 }

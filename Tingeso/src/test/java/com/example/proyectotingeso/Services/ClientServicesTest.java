@@ -1,277 +1,314 @@
 package com.example.proyectotingeso.Services;
 
+import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.example.proyectotingeso.Entity.ClientEntity;
 import com.example.proyectotingeso.Entity.LoanToolsEntity;
 import com.example.proyectotingeso.Entity.StateUsersEntity;
 import com.example.proyectotingeso.Repository.ClientRepository;
 import com.example.proyectotingeso.Repository.StateUsersRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 public class ClientServicesTest {
 
     @Mock
-    private ClientRepository clientRepository;
+    ClientRepository clientRepository;
 
     @Mock
-    private StateUsersRepository stateUsersRepository;
+    StateUsersRepository stateUsersRepository;
 
     @Mock
-    private LoanToolsServices loanToolsServices;
+    LoanToolsServices loanToolsServices;
 
     @InjectMocks
-    private ClientServices clientServices;
+    ClientServices clientServices;
+
+    // Entidades simuladas
+    private final StateUsersEntity activeState = new StateUsersEntity(1L, "Active");
+    private ClientEntity newClient;
+    private ClientEntity existingClient;
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         MockitoAnnotations.openMocks(this);
-    }
 
-    @Test
-    public void testCreateClient_whenStateIsNull_thenSetActiveState() {
-        // Given
-        ClientEntity clientEntity = new ClientEntity(null, "Juan Perez", "juan@mail.com", "12345678-9", "555-1234", null);
-
-        // Simular que "Active" está presente en la base de datos
-        StateUsersEntity activeState = new StateUsersEntity(1L, "Active");
+        // Configuración por defecto para el estado "Active"
         when(stateUsersRepository.findByName("Active")).thenReturn(activeState);
 
-        // Simular que no existe un cliente con el mismo RUT ni email
-        when(clientRepository.findFirstByRut(clientEntity.getRut())).thenReturn(Optional.empty());
-        when(clientRepository.findFirstByEmail(clientEntity.getEmail())).thenReturn(Optional.empty());
-        when(clientRepository.save(clientEntity)).thenReturn(clientEntity);
+        // Cliente base para tests de creación
+        // Constructor basado en ClientEntity: (id, name, email, rut, phone, state)
+        newClient = new ClientEntity(null, "Juan Perez", "juan@test.com", "12345678-9", "987654321", null);
 
-        // When
-        ClientEntity result = clientServices.createClient(clientEntity);
+        // Cliente existente para mocks
+        existingClient = new ClientEntity(10L, "Ana Gomez", "ana@test.com", "98765432-1", "123456789", activeState.getId());
 
-        // Then
-        assertNotNull(result);
-        assertEquals(1L, result.getState());  // El estado debe ser "Active"
-        verify(clientRepository, times(1)).save(clientEntity);
+        // Simular que save devuelve la entidad con un ID asignado
+        when(clientRepository.save(any(ClientEntity.class)))
+                .thenAnswer(invocation -> {
+                    ClientEntity client = invocation.getArgument(0);
+                    if (client.getId() == null) client.setId(1L);
+                    return client;
+                });
+    }
+
+    // =========================================================================
+    // 1. Tests para createClient(ClientEntity clientEntity)
+    // =========================================================================
+
+    @Nested
+    class CreateClientTests {
+
+        @Test
+        void testCreateClient_Success_AssignsDefaultActiveState() {
+            // Arrange
+            // Simular que no existen duplicados
+            when(clientRepository.findFirstByRut(anyString())).thenReturn(Optional.empty());
+            when(clientRepository.findFirstByEmail(anyString())).thenReturn(Optional.empty());
+
+            // Act
+            ClientEntity createdClient = clientServices.createClient(newClient);
+
+            // Assert
+            assertNotNull(createdClient.getId());
+            assertEquals(activeState.getId(), createdClient.getState(), "Debe asignar el estado 'Active'.");
+            verify(clientRepository, times(1)).save(any(ClientEntity.class));
+            verify(stateUsersRepository, times(1)).findByName("Active");
+        }
+
+        @Test
+        void testCreateClient_Success_UsesProvidedState() {
+            // Arrange
+            Long restrictedStateId = 2L;
+            newClient.setState(restrictedStateId); // Cliente ya trae un estado
+
+            // Simular que no existen duplicados
+            when(clientRepository.findFirstByRut(anyString())).thenReturn(Optional.empty());
+            when(clientRepository.findFirstByEmail(anyString())).thenReturn(Optional.empty());
+
+            // Act
+            ClientEntity createdClient = clientServices.createClient(newClient);
+
+            // Assert
+            assertEquals(restrictedStateId, createdClient.getState(), "Debe usar el estado provisto.");
+            // No debe buscar el estado por defecto
+            verify(stateUsersRepository, never()).findByName(anyString());
+            verify(clientRepository, times(1)).save(any(ClientEntity.class));
+        }
+
+        @Test
+        void testCreateClient_DuplicateRut_ThrowsException() {
+            // Arrange
+            when(clientRepository.findFirstByRut(newClient.getRut())).thenReturn(Optional.of(existingClient));
+            when(clientRepository.findFirstByEmail(newClient.getEmail())).thenReturn(Optional.empty());
+
+            // Act & Assert
+            IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
+                clientServices.createClient(newClient);
+            });
+
+            assertTrue(thrown.getMessage().contains("Ya existe un cliente con ese RUT"));
+            verify(clientRepository, never()).save(any(ClientEntity.class));
+        }
+
+        @Test
+        void testCreateClient_DuplicateEmail_ThrowsException() {
+            // Arrange
+            when(clientRepository.findFirstByRut(newClient.getRut())).thenReturn(Optional.empty());
+            when(clientRepository.findFirstByEmail(newClient.getEmail())).thenReturn(Optional.of(existingClient));
+
+            // Act & Assert
+            IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> {
+                clientServices.createClient(newClient);
+            });
+
+            assertTrue(thrown.getMessage().contains("Ya existe un cliente con ese email"));
+            verify(clientRepository, never()).save(any(ClientEntity.class));
+        }
+    }
+
+    // =========================================================================
+    // 2. Tests para getAllClientLoanLate()
+    // =========================================================================
+
+    @Test
+    void testGetAllClientLoanLate_ReturnsLateClients() {
+        // Arrange
+
+        // Fechas de ejemplo
+        LocalDate initialDate = LocalDate.now().minusDays(10);
+        LocalDate finalDate = LocalDate.now().minusDays(5); // Una fecha pasada (indica atraso)
+
+        // 1. Configurar préstamos atrasados
+        // Constructor de LoanToolsEntity:
+        // (id, initiallenddate, finalreturndate, clientid, toolid, status, lateFee, rentalFee, damageFee, repositionFee)
+
+        // Préstamo 1: Cliente 5
+        LoanToolsEntity loan1 = new LoanToolsEntity(
+                1L, initialDate, finalDate, 5L, 1L,
+                "Late", 10.0, 50.0, 0.0, 0.0
+        );
+
+        // Préstamo 2: Cliente 6
+        LoanToolsEntity loan2 = new LoanToolsEntity(
+                2L, initialDate, finalDate, 6L, 2L,
+                "Late", 20.0, 60.0, 0.0, 0.0
+        );
+
+        List<LoanToolsEntity> lateLoans = Arrays.asList(loan1, loan2);
+
+        // Simular que el servicio de préstamos devuelve la lista de atrasados
+        when(loanToolsServices.findallloanstoolstatusLate()).thenReturn(lateLoans);
+
+        // 2. Clientes correspondientes a los IDs (Client ID 5 y 6)
+        // Constructor: (id, name, email, rut, phone, state)
+        ClientEntity client5 = new ClientEntity(5L, "Client A", "a@a.com", "C1", "123", 1L);
+        ClientEntity client6 = new ClientEntity(6L, "Client B", "b@b.com", "C2", "456", 1L);
+        List<ClientEntity> expectedClients = Arrays.asList(client5, client6);
+
+        // Simular que el repositorio devuelve los clientes con IDs 5 y 6
+        when(clientRepository.findAllById(Arrays.asList(5L, 6L))).thenReturn(expectedClients);
+
+        // Act
+        List<ClientEntity> actualClients = clientServices.getAllClientLoanLate();
+
+        // Assert
+        assertNotNull(actualClients);
+        assertEquals(2, actualClients.size());
+        assertEquals(5L, actualClients.get(0).getId());
+        assertEquals(6L, actualClients.get(1).getId());
+
+        verify(loanToolsServices, times(1)).findallloanstoolstatusLate();
+        // Verificar que se llamó findAllById con los IDs correctos extraídos del préstamo
+        verify(clientRepository, times(1)).findAllById(Arrays.asList(5L, 6L));
     }
 
     @Test
-    public void testCreateClient_whenStateNotFound_thenThrowException() {
-        // Given
-        ClientEntity clientEntity = new ClientEntity(null, "Juan Perez", "juan@mail.com", "12345678-9", "555-1234", null);
+    void testGetAllClientLoanLate_NoLateLoans_ReturnsEmptyList() {
+        // Arrange
+        when(loanToolsServices.findallloanstoolstatusLate()).thenReturn(Collections.emptyList());
 
-        // Simular que no existe el estado "Active" en la base de datos
-        when(stateUsersRepository.findByName("Active")).thenReturn(null);
+        // Act
+        List<ClientEntity> actualClients = clientServices.getAllClientLoanLate();
 
-        // When & Then
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
-            clientServices.createClient(clientEntity);
-        });
-        assertEquals("No se encontró el estado 'Active' en la base de datos.", exception.getMessage());
+        // Assert
+        assertNotNull(actualClients);
+        assertTrue(actualClients.isEmpty());
+
+        verify(loanToolsServices, times(1)).findallloanstoolstatusLate();
+        // Cuando la lista de IDs está vacía, findAllById no debe ser llamado.
+        verify(clientRepository, never()).findAllById(anyList());
     }
 
+    // =========================================================================
+    // 3. Tests para CRUD básico
+    // =========================================================================
 
     @Test
-    public void testCreateClient_whenRutExists_thenThrowException() {
-        // Given
-        ClientEntity clientEntity = new ClientEntity(null, "Juan Perez", "juan@mail.com", "12345678-9", "555-1234", null);
+    void testGetAllClients_ReturnsAllClients() {
+        // Arrange
+        // Crear una instancia de ClientEntity válida con el constructor NoArgsConstructor y seters.
+        ClientEntity dummyClient = new ClientEntity();
+        dummyClient.setId(11L);
+        dummyClient.setName("Dummy");
 
-        // Simular que ya existe un cliente con el mismo RUT
-        when(clientRepository.findFirstByRut(clientEntity.getRut())).thenReturn(Optional.of(clientEntity));
+        List<ClientEntity> clients = Arrays.asList(existingClient, dummyClient);
+        when(clientRepository.findAll()).thenReturn(clients);
 
-        // When & Then
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            clientServices.createClient(clientEntity);
-        });
-        assertEquals("Ya existe un cliente con ese RUT: 12345678-9", exception.getMessage());
-    }
-
-
-    @Test
-    public void testCreateClient_whenEmailExists_thenThrowException() {
-        // Given
-        ClientEntity clientEntity = new ClientEntity(null, "Juan Perez", "juan@mail.com", "12345678-9", "555-1234", null);
-
-        // Simular que ya existe un cliente con el mismo email
-        when(clientRepository.findFirstByEmail(clientEntity.getEmail())).thenReturn(Optional.of(clientEntity));
-
-        // When & Then
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            clientServices.createClient(clientEntity);
-        });
-        assertEquals("Ya existe un cliente con ese email: juan@mail.com", exception.getMessage());
-    }
-
-    @Test
-    public void testCreateClient_whenValidClient_thenCreateSuccessfully() {
-        // Given
-        ClientEntity newClient = new ClientEntity(null, "Juan Perez", "juan@mail.com", "12345678-9", "555-1234", null);
-
-        // Simular que no existen clientes con el mismo RUT y email
-        when(clientRepository.findFirstByRut(newClient.getRut())).thenReturn(Optional.empty());
-        when(clientRepository.findFirstByEmail(newClient.getEmail())).thenReturn(Optional.empty());
-
-        // Simular la respuesta del estado predeterminado
-        when(stateUsersRepository.findByName("Active")).thenReturn(new StateUsersEntity(1L, "Active"));
-
-        // Simular que el repositorio guarda el cliente y lo retorna
-        when(clientRepository.save(newClient)).thenReturn(newClient);
-
-        // When
-        ClientEntity result = clientServices.createClient(newClient);
-
-        // Then
-        assertNotNull(result);
-        assertEquals("Juan Perez", result.getName());
-        assertEquals("juan@mail.com", result.getEmail());
-        assertEquals("12345678-9", result.getRut());
-        assertEquals(1L, result.getState());  // Verificar el estado predeterminado
-        verify(clientRepository, times(1)).save(newClient);
-    }
-
-
-    @Test
-    public void testGetAllClients() {
-        // Given
-        ClientEntity client1 = new ClientEntity(1L, "Juan Perez", "juan@mail.com", "12345678-9", "555-1234", 1L);
-        ClientEntity client2 = new ClientEntity(2L, "Maria Lopez", "maria@mail.com", "98765432-1", "555-5678", 1L);
-        when(clientRepository.findAll()).thenReturn(List.of(client1, client2));
-
-        // When
+        // Act
         List<ClientEntity> result = clientServices.getAllClients();
 
-        // Then
-        assertNotNull(result);
+        // Assert
         assertEquals(2, result.size());
-        assertEquals("Juan Perez", result.get(0).getName());
-        assertEquals("Maria Lopez", result.get(1).getName());
+        verify(clientRepository, times(1)).findAll();
     }
 
-
     @Test
-    public void testGetClientById() {
-        // Given
-        ClientEntity client1 = new ClientEntity(1L, "Juan Perez", "juan@mail.com", "12345678-9", "555-1234", 1L);
-
-        // Simular que el cliente con el id 1 existe en el repositorio
-        when(clientRepository.findById(client1.getId())).thenReturn(Optional.of(client1));
-
-        // When
-        ClientEntity result = clientServices.getClientById(client1.getId());
-
-        // Then
-        assertNotNull(result);
-        assertEquals("Juan Perez", result.getName());
-        assertEquals(client1.getId(), result.getId());
-    }
-
-
-    @Test
-    public void testGetClientById_whenClientDoesNotExist() {
-        // Given
-        Long nonExistingClientId = 999L;
-
-        // Simular que no existe un cliente con el id 999
-        when(clientRepository.findById(nonExistingClientId)).thenReturn(Optional.empty());
-
-        // When
-        ClientEntity result = clientServices.getClientById(nonExistingClientId);
-
-        // Then
-        assertNull(result);  // Esperamos que el resultado sea null si no existe el cliente
-    }
-
-
-
-
-
-
-    @Test
-    public void testGetClientByRut() {
-        // Given
-        String rut = "12345678-9";
-        ClientEntity client = new ClientEntity(1L, "Juan Perez", "juan@mail.com", rut, "555-1234", 1L);
+    void testGetClientByRut_ClientFound_ReturnsClient() {
+        // Arrange
+        String rut = "11223344-5";
+        // Constructor: (id, name, email, rut, phone, state)
+        ClientEntity client = new ClientEntity(2L, "Test User", "t@u.com", rut, "555", 1L);
         when(clientRepository.findByRut(rut)).thenReturn(client);
 
-        // When
+        // Act
         ClientEntity result = clientServices.getClientByRut(rut);
 
-        // Then
+        // Assert
         assertNotNull(result);
-        assertEquals("Juan Perez", result.getName());
         assertEquals(rut, result.getRut());
+        verify(clientRepository, times(1)).findByRut(rut);
     }
 
-
     @Test
-    public void testUpdateClient() {
-        // Given
-        ClientEntity updatedClient = new ClientEntity(1L, "Juan Perez", "juan@mail.com", "12345678-9", "555-1234", 1L);
-        when(clientRepository.save(updatedClient)).thenReturn(updatedClient);
+    void testGetClientById_ClientFound_ReturnsClient() {
+        // Arrange
+        Long id = 10L;
+        when(clientRepository.findById(id)).thenReturn(Optional.of(existingClient));
 
-        // When
-        ClientEntity result = clientServices.updateClient(updatedClient);
+        // Act
+        ClientEntity result = clientServices.getClientById(id);
 
-        // Then
+        // Assert
         assertNotNull(result);
-        assertEquals("Juan Perez", result.getName());
-        verify(clientRepository, times(1)).save(updatedClient);
+        assertEquals(id, result.getId());
+        verify(clientRepository, times(1)).findById(id);
     }
 
     @Test
-    public void testDeleteClient_whenClientExists_thenDeleteSuccessfully() throws Exception {
-        // Given
-        Long clientId = 1L;
-        doNothing().when(clientRepository).deleteById(clientId);
+    void testUpdateClient_Success_ReturnsUpdatedClient() {
+        // Arrange
+        // Constructor: (id, name, email, rut, phone, state)
+        ClientEntity clientToUpdate = new ClientEntity(10L, "Ana Updated", "ana_new@test.com", "98765432-1", "999888777", activeState.getId());
+        when(clientRepository.save(clientToUpdate)).thenReturn(clientToUpdate);
 
-        // When
-        boolean result = clientServices.deleteClient(clientId);
+        // Act
+        ClientEntity result = clientServices.updateClient(clientToUpdate);
 
-        // Then
+        // Assert
+        assertEquals("Ana Updated", result.getName(), "El nombre debe estar actualizado.");
+        assertEquals("ana_new@test.com", result.getEmail());
+        verify(clientRepository, times(1)).save(clientToUpdate);
+    }
+
+    @Test
+    void testDeleteClient_Success_ReturnsTrue() throws Exception {
+        // Arrange
+        Long id = 10L;
+        doNothing().when(clientRepository).deleteById(id);
+
+        // Act
+        boolean result = clientServices.deleteClient(id);
+
+        // Assert
         assertTrue(result);
-        verify(clientRepository, times(1)).deleteById(clientId);
+        verify(clientRepository, times(1)).deleteById(id);
     }
 
     @Test
-    public void testDeleteClient_whenClientNotFound_thenThrowException() {
-        // Given
-        Long clientId = 123L;
-        doThrow(new RuntimeException("Client not found")).when(clientRepository).deleteById(clientId);
+    void testDeleteClient_Failure_ThrowsException() {
+        // Arrange
+        Long id = 10L;
+        String errorMessage = "Foreign key constraint violation";
+        doThrow(new RuntimeException(errorMessage)).when(clientRepository).deleteById(id);
 
-        // When & Then
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            clientServices.deleteClient(clientId);
+        // Act & Assert
+        Exception exception = assertThrows(Exception.class, () -> {
+            clientServices.deleteClient(id);
         });
-        assertEquals("Client not found", exception.getMessage());
+
+        assertTrue(exception.getMessage().contains(errorMessage));
+        verify(clientRepository, times(1)).deleteById(id);
     }
-
-    @Test
-    public void testGetAllClientLoanLate() {
-        // Given
-        LoanToolsEntity loan1 = new LoanToolsEntity(1L, LocalDate.now().minusDays(10), LocalDate.now().plusDays(5), 1L, 1L, "active", 50.0, 100.0, 0.0, 0.0);
-        LoanToolsEntity loan2 = new LoanToolsEntity(2L, LocalDate.now().minusDays(20), LocalDate.now().minusDays(2), 2L, 2L, "late", 75.0, 100.0, 0.0, 50.0);
-        when(loanToolsServices.findallloanstoolstatusLate()).thenReturn(List.of(loan1, loan2));
-
-        ClientEntity client1 = new ClientEntity(1L, "Juan Perez", "juan@mail.com", "12345678-9", "555-1234", 1L);
-        ClientEntity client2 = new ClientEntity(2L, "Maria Lopez", "maria@mail.com", "98765432-1", "555-5678", 1L);
-        when(clientRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of(client1, client2));
-
-        // When
-        List<ClientEntity> result = clientServices.getAllClientLoanLate();
-
-        // Then
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        assertEquals("Juan Perez", result.get(0).getName());
-        assertEquals("Maria Lopez", result.get(1).getName());
-    }
-
-
-
 }

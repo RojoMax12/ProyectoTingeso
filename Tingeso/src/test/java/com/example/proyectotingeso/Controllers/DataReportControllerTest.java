@@ -61,7 +61,7 @@ public class DataReportControllerTest {
     public void createDataReport_ShouldReturnCreatedStatus() throws Exception {
         // Arrange
         Long mockIdReport = 100L;
-        Long mockIdClient = 1L;
+        Long mockIdClient = 1L; // El valor que esperamos
         Long mockIdLoanTool = 10L;
         Long mockIdTool = 5L;
         Long mockNumberTimes = 3L;
@@ -79,8 +79,10 @@ public class DataReportControllerTest {
                         .content(objectMapper.writeValueAsString(newReport)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id", is(1)))
-                .andExpect(jsonPath("$.idreport", is(mockIdReport.intValue()))) // Verificar el ID de reporte
-                .andExpect(jsonPath("$.idclient", is(mockIdClient.intValue())));
+                .andExpect(jsonPath("$.idreport", is(mockIdReport.intValue())))
+
+                // 🛑 CORRECCIÓN CLAVE: Cambiar 'idclient' por 'idClient' (Camel Case)
+                .andExpect(jsonPath("$.idClient", is(mockIdClient.intValue())));
 
         verify(dataReportService, times(1)).createDataReport(Mockito.any(DataReportEntity.class));
     }
@@ -108,8 +110,11 @@ public class DataReportControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()", is(2)))
-                // Verificamos un campo relevante de la nueva estructura
-                .andExpect(jsonPath("$[0].idloantool", is(10)))
+
+                // 🛑 CORRECCIÓN 1: Cambiar 'idloantool' por 'idLoanTool' (Camel Case)
+                .andExpect(jsonPath("$[0].idLoanTool", is(10)))
+
+                // La segunda aserción ya era correcta:
                 .andExpect(jsonPath("$[1].number_of_times_borrowed", is(1)));
 
         verify(dataReportService, times(1)).findReportByIdreport(targetIdReport);
@@ -136,11 +141,12 @@ public class DataReportControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()", is(2)))
-                .andExpect(jsonPath("$[1].idloantool", is(20)));
+
+                // 🛑 CORRECTION: Change 'idloantool' to 'idLoanTool' (Camel Case)
+                .andExpect(jsonPath("$[1].idLoanTool", is(20)));
 
         verify(dataReportService, times(1)).findAllDataReport();
     }
-
     // ------------------------------------------------------------------------------------------
     // 4. Verificar si existe DataReportEntity por ID de Cliente (GET /existsByClient/{idClient})
     // ------------------------------------------------------------------------------------------
