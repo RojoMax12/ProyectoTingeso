@@ -118,29 +118,44 @@ public class ToolServices {
         return tools.size();
     }
 
-    public ToolEntity unsubscribeToolAdmin(Long idTool) throws Exception{
-        ToolEntity tool = toolRepository.findById(idTool).get();
-        //KardexEntity kardex = new KardexEntity(null, loanToolsRepository.findByToolid(idTool).get().getId(), tool.getId());
-        if(toolRepository.findById(idTool).isPresent()){
-                tool.setStates(stateToolsRepository.findByName("Discharged").getId());
-                //kardexRepository.save(kardex);
-                return toolRepository.save(tool);
-            }
-        new IllegalArgumentException("No existe la herramienta");
-        return toolRepository.save(tool);
+    public ToolEntity unsubscribeToolAdmin(Long idTool) throws Exception {
+        // Buscar la herramienta por ID
+        ToolEntity tool = toolRepository.findById(idTool)
+                .orElseThrow(() -> new IllegalArgumentException("No existe la herramienta"));
+
+        // Buscar el estado "Discharged" en el repositorio de estados
+        StateToolsEntity dischargedState = stateToolsRepository.findByName("Discharged");
+        if (dischargedState == null) {
+            throw new IllegalStateException("El estado 'Discharged' no está configurado en la base de datos");
         }
 
+        // Actualizar el estado de la herramienta a "Discharged"
+        tool.setStates(dischargedState.getId());
 
-    public ToolEntity borrowedTool(Long idTool) throws Exception{
-        ToolEntity tool = toolRepository.findById(idTool).get();
-        if(toolRepository.findById(idTool).isPresent()){
-            tool.setStates(stateToolsRepository.findByName("Borrowed").getId());
-            return toolRepository.save(tool);
-        }
-        new IllegalArgumentException("No existe la herramienta");
+        // Guardar la herramienta con el nuevo estado
         return toolRepository.save(tool);
-
     }
+
+
+
+    public ToolEntity borrowedTool(Long idTool) throws Exception {
+        // Verificar si la herramienta existe
+        ToolEntity tool = toolRepository.findById(idTool)
+                .orElseThrow(() -> new IllegalArgumentException("No existe la herramienta"));
+
+        // Buscar el estado "Borrowed" en el repositorio
+        StateToolsEntity borrowedState = stateToolsRepository.findByName("Borrowed");
+        if (borrowedState == null) {
+            throw new IllegalStateException("El estado 'Borrowed' no está configurado en la base de datos");
+        }
+
+        // Actualizar el estado de la herramienta a "Borrowed"
+        tool.setStates(borrowedState.getId());
+
+        // Guardar la herramienta actualizada
+        return toolRepository.save(tool);
+    }
+
 
     public ToolEntity inrepair(Long idTool) throws Exception{
         ToolEntity tool = toolRepository.findById(idTool).get();

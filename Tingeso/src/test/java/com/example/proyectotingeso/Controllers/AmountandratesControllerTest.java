@@ -21,7 +21,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(controllers = AmountandratesController.class)
-@EnableAutoConfiguration(exclude = OAuth2ClientAutoConfiguration.class)
+@AutoConfigureMockMvc(addFilters = false)
 public class AmountandratesControllerTest {
 
     @Autowired
@@ -47,7 +47,8 @@ public class AmountandratesControllerTest {
 
         // Llamada al endpoint POST
         mockMvc.perform(post("/api/AmountandRates/")
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"dailyrentalrate\": 0.0, \"dailylatefeefine\": 0.0, \"reparationcharge\": 0.0}"))
                 .andExpect(status().isOk()) // Verificar que el estado sea 200 OK
                 .andExpect(jsonPath("$.dailyrentalrate", is(0.0))) // Verificar el valor de dailyrentalrate
                 .andExpect(jsonPath("$.dailylatefeefine", is(0.0))) // Verificar el valor de dailylatefeefine
@@ -90,3 +91,4 @@ public class AmountandratesControllerTest {
                 .andExpect(jsonPath("$.reparationcharge", is(5.0))); // Verificar el valor actualizado de reparationcharge
     }
 }
+

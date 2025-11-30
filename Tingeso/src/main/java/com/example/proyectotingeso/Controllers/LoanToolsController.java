@@ -37,8 +37,14 @@ public class LoanToolsController {
 
     @PreAuthorize(("hasAnyRole('USER','ADMIN')"))
     @PutMapping("/register-damage/{idloan}")
-    public void registerDamageandReposition(@PathVariable Long idloan){
-        loanToolsServices.registerDamageFeeandReposition(idloan);
+    public ResponseEntity<?> registerDamageandReposition(@PathVariable Long idloan){
+        try {
+            loanToolsServices.registerDamageFeeandReposition(idloan);
+            return ResponseEntity.ok().build(); // Devuelve 200 OK si es exitoso (vacío)
+        } catch (RuntimeException e) {
+
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
     }
 
     @PreAuthorize(("hasAnyRole('USER','ADMIN')"))

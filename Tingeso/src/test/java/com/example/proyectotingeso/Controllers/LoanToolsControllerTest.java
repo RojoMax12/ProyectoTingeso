@@ -7,7 +7,10 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.times;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -17,9 +20,11 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 
+
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -207,5 +212,63 @@ public class LoanToolsControllerTest {
         mockMvc.perform(put("/api/LoanTools/Pay/{idloan}", 1L))
                 .andExpect(status().isOk())
                 .andExpect(content().string("true"));
+    }
+
+    // ... Otros tests
+
+    @Test
+    @WithMockUser(roles = "ADMIN") // Añadida para pasar el @PreAuthorize
+    public void testRegisterDamageAndReposition_Success() throws Exception {
+        // Arrange
+        Long loanId = 5L;
+        // El servicio no devuelve nada (void), así que no necesitamos mockear un retorno
+        doNothing().when(loanToolsServices).registerDamageFeeandReposition(loanId);
+
+        // Act & Assert
+        // CORRECCIÓN: Usar la ruta completa /api/LoanTools/register-damage/{idloan}
+        mockMvc.perform(put("/api/LoanTools/register-damage/{idloan}", loanId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isOk()); // Esperamos un 200 OK
+
+        // Verify: Verificamos que el servicio haya sido llamado exactamente una vez con el ID correcto
+        verify(loanToolsServices, times(1)).registerDamageFeeandReposition(loanId);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN") // Añadida para pasar el @PreAuthorize
+    public void testRegisterDamageAndReposition_ServiceFails_thenInternalServerError() throws Exception {
+        // Arrange
+        Long loanId = 6L;
+        // Simular que el servicio lanza una excepción (ej: préstamo no encontrado)
+        doThrow(new RuntimeException("Loan not found")).when(loanToolsServices).registerDamageFeeandReposition(loanId);
+
+        // Act & Assert
+        // CORRECCIÓN: Usar la ruta completa /api/LoanTools/register-damage/{idloan}
+        mockMvc.perform(put("/api/LoanTools/register-damage/{idloan}", loanId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                )
+                // Esperamos un 500 Internal Server Error (Spring lo lanza automáticamente si el método es void y hay una RuntimeException)
+                .andExpect(status().isInternalServerError());
+
+        verify(loanToolsServices, times(1)).registerDamageFeeandReposition(loanId);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    public void testRegisterDamageAndReposition_ServiceFails_thenNotFound() throws Exception {
+        // Arrange
+        Long loanId = 6L;
+        // Simular que el servicio lanza una excepción
+        doThrow(new RuntimeException("Loan not found")).when(loanToolsServices).registerDamageFeeandReposition(loanId);
+
+        // Act & Assert
+        mockMvc.perform(put("/api/LoanTools/register-damage/{idloan}", loanId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                )
+                // Cambiar a 404 si el controlador maneja la excepción y la mapea a ese código.
+                .andExpect(status().isNotFound());
+
+        verify(loanToolsServices, times(1)).registerDamageFeeandReposition(loanId);
     }
 }
