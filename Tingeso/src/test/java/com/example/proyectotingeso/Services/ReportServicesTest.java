@@ -113,7 +113,7 @@ public class ReportServicesTest {
         assertEquals(2, result.size());
         assertEquals("ReportLoanTools", result.get(0).getName());
     }
-    
+
 
     @Test
     public void testReportfilterDate() {

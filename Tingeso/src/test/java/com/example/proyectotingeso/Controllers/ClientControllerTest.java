@@ -129,4 +129,26 @@ public class ClientControllerTest {
                 .andExpect(jsonPath("$.name", is("Maria Lopez")))
                 .andExpect(jsonPath("$.rut", is("55555555-5")));
     }
+
+    @Test
+    @WithMockUser(roles = "ADMIN") // Simula un usuario con el rol 'ADMIN'
+    public void testGetAllClientLoanLate() throws Exception {
+        // Crear datos de prueba: una lista de clientes con préstamos atrasados
+        ClientEntity client1 = new ClientEntity(1L, "Carlos", "carlos@mail.com", "13.777.548-2", "+567923243", 2L);
+        ClientEntity client2 = new ClientEntity(2L, "Felipe", "felipe@mail.com", "19.123.456-7", "+5679232432", 2L);
+
+        List<ClientEntity> clientsWithLateLoans = Arrays.asList(client1, client2);
+
+        // Simular la respuesta del servicio
+        given(clientServices.getAllClientLoanLate()).willReturn(clientsWithLateLoans);
+
+        // Realizar la solicitud GET al endpoint y verificar la respuesta
+        mockMvc.perform(get("/api/client/AllClientLoanLate")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk()) // Verificar que la respuesta sea 200 OK
+                .andExpect(jsonPath("$", hasSize(2)))  // Verificar que hay 2 clientes
+                .andExpect(jsonPath("$[0].id", is(1)))  // Verificar que el primer cliente tiene ID 1
+                .andExpect(jsonPath("$[1].id", is(2))); // Verificar que el segundo cliente tiene ID 2
+    }
+
 }
