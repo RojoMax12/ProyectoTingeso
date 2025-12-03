@@ -61,6 +61,7 @@ const ClientList = () => {
         setFilteredClients(filtered);
     }, [clients, searchTerm]);
 
+    //Obtiene a todos los clientes
     const fetchClients = async () => {
         setLoading(true);
         try {

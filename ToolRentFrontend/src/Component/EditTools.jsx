@@ -160,7 +160,8 @@ const EditTools = () => {
               borderRadius: 3,
               boxShadow: "0 4px 16px rgba(255,94,0,0.25)"
             }}
-          >
+          > 
+            {/*Formulario */}
             <Stack spacing={3}>
               <TextField
                 label="Nombre de la Herramienta"

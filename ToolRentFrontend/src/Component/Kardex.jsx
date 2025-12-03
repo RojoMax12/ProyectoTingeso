@@ -134,7 +134,8 @@ const Kardex = () => {
 
 
 return (
-    <>
+    <>  
+        {/* Slidebar */}
         <IconButton
             color="inherit"
             onClick={() => setDrawerOpen(true)}
@@ -326,7 +327,9 @@ return (
                                     position: "sticky",
                                     top: 0,
                                     zIndex: 2
-                                }}>ID</TableCell>
+                                }}>
+                                    ID</TableCell>
+
                                 <TableCell sx={{ 
                                     color: "#fff", 
                                     fontWeight: "bold",
@@ -334,7 +337,8 @@ return (
                                     position: "sticky",
                                     top: 0,
                                     zIndex: 2
-                                }}>Fecha</TableCell>
+                                }}>
+                                    Fecha</TableCell>
                                 <TableCell sx={{ 
                                     color: "#fff", 
                                     fontWeight: "bold",
@@ -342,7 +346,8 @@ return (
                                     position: "sticky",
                                     top: 0,
                                     zIndex: 2
-                                }}>Estado de la herramienta</TableCell>
+                                }}
+                                >Estado de la herramienta</TableCell>
                                 <TableCell sx={{ 
                                     color: "#fff", 
                                     fontWeight: "bold",
@@ -350,7 +355,8 @@ return (
                                     position: "sticky",
                                     top: 0,
                                     zIndex: 2
-                                }}>Usuario</TableCell>
+                                }}>
+                                    Usuario</TableCell>
                                 <TableCell sx={{ 
                                     color: "#fff", 
                                     fontWeight: "bold",
@@ -358,7 +364,8 @@ return (
                                     position: "sticky",
                                     top: 0,
                                     zIndex: 2
-                                }}>Cantidad</TableCell>
+                                }}>
+                                    Cantidad</TableCell>
                                 <TableCell sx={{ 
                                     color: "#fff", 
                                     fontWeight: "bold",
@@ -366,13 +373,14 @@ return (
                                     position: "sticky",
                                     top: 0,
                                     zIndex: 2
-                                }}>Nombre de la Herramienta</TableCell>
+                                }}>
+                                    Nombre de la Herramienta</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {kardexList.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} align="center"> {/* <-- Corregido: colSpan={6} en lugar de {7} */}
+                                    <TableCell colSpan={6} align="center"> 
                                         <Typography 
                                             color="text.secondary"
                                             sx={{ py: 4, fontStyle: 'italic' }}

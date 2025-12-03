@@ -32,6 +32,18 @@ const LoanTool = () => {
     const { keycloak } = useKeycloak();
     const isAdmin = keycloak.hasRealmRole('ADMIN');
 
+    const sidebarOptions = [
+        { text: "Inicio", icon: <HomeIcon />, path: "/" },
+        { text: "Herramientas", icon: <BuildIcon />, path: "/ToolList" },
+        { text: "Agregar Herramienta", icon: <LibraryAddIcon />, path: "/AddTools" },
+        { text: "Ver Kardex", icon: <AssessmentIcon />, path: "/Kardex" },
+        { text: "Registrar Cliente", icon: <PersonAddAltIcon />, path: "/RegisterClient" },
+        { text: "Clientes", icon: <ContactsIcon />, path: "/ClientList" },
+        { text: "Reportes", icon: <ReportIcon />, path: "/Reports" },
+        ...(isAdmin ? [{ text: "Configuraciones", icon: <AdminPanelSettingsIcon />, path: "/Configuration" }] : [])
+    ];
+
+
     useEffect(() => {
         ToolServices.getAll()
             .then(response => {
@@ -137,18 +149,9 @@ const LoanTool = () => {
             console.error(error);
         });
     };
+    
 
-    const sidebarOptions = [
-        { text: "Inicio", icon: <HomeIcon />, path: "/" },
-        { text: "Herramientas", icon: <BuildIcon />, path: "/ToolList" },
-        { text: "Agregar Herramienta", icon: <LibraryAddIcon />, path: "/AddTools" },
-        { text: "Ver Kardex", icon: <AssessmentIcon />, path: "/Kardex" },
-        { text: "Registrar Cliente", icon: <PersonAddAltIcon />, path: "/RegisterClient" },
-        { text: "Clientes", icon: <ContactsIcon />, path: "/ClientList" },
-        { text: "Reportes", icon: <ReportIcon />, path: "/Reports" },
-        ...(isAdmin ? [{ text: "Configuraciones", icon: <AdminPanelSettingsIcon />, path: "/Configuration" }] : [])
-    ];
-
+    
     return (
         <>
             {/* Fondo pantalla completa */}
@@ -163,6 +166,8 @@ const LoanTool = () => {
                     zIndex: -1
                 }}
             />
+
+            {/*SiderBar*/}
             <Box sx={{ p: 4, minHeight: "100vh" }}>
                 <IconButton
                     color="inherit"
@@ -191,7 +196,8 @@ const LoanTool = () => {
                             backgroundColor: "#FEF3E2" 
                         }
                     }}
-                >
+                >   
+                    
                     <List>
                         {sidebarOptions.map((option) => (
                             <ListItem key={option.text} disablePadding>
@@ -277,7 +283,7 @@ const LoanTool = () => {
                                         borderColor: 'rgba(255, 94, 0, 1)',
                                     },
                                 }}
-                            >
+                            >   
                                 {groupedTools.map(toolGroup => (
                                     <MenuItem 
                                         key={toolGroup.id} 

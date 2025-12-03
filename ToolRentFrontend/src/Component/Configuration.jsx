@@ -154,6 +154,7 @@ const Configuration = () => {
             border: "2px solid rgba(255, 94, 0, 0.2)"
           }}
         >
+          {/*Configuracion de los cargo y tarifas*/}
           <Stack spacing={3}>
             <Typography variant="h6" sx={{ fontWeight: "bold", mb: 2 , color: "rgba(255, 94, 0, 1)" }}>
               Configuraciones de tarifas y cargos

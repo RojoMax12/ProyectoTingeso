@@ -169,32 +169,6 @@ const Home = () => {
     keycloak.logout();
   };
 
-      const validateRut = (rut) => {
-        if (!rut) return false;
-        
-        // Remover puntos y guión
-        const cleanRut = rut.replace(/\./g, '').replace('-', '');
-        
-        if (cleanRut.length < 8 || cleanRut.length > 9) return false;
-        
-        const body = cleanRut.slice(0, -1);
-        const dv = cleanRut.slice(-1).toLowerCase();
-        
-        let sum = 0;
-        let multiplier = 2;
-        
-        for (let i = body.length - 1; i >= 0; i--) {
-            sum += parseInt(body[i]) * multiplier;
-            multiplier = multiplier === 7 ? 2 : multiplier + 1;
-        }
-        
-        const expectedDv = 11 - (sum % 11);
-        const calculatedDv = expectedDv === 11 ? '0' : expectedDv === 10 ? 'k' : expectedDv.toString();
-        
-        return calculatedDv === dv;
-    };
-
-    // Formatear RUT con puntos y guión
        const formatRut = (value) => {
         if (!value) return "";
         

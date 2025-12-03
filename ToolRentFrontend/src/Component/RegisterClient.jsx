@@ -187,6 +187,8 @@ const RegisterClient = () => {
             console.log("✅ Respuesta del servidor:", response);
             
             setSuccessMessage("✅ Cliente registrado exitosamente!");
+            alert("Cliente registrado correctamente")
+            
             
             setTimeout(() => {
                 setFormData({

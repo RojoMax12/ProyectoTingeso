@@ -33,11 +33,18 @@ const Reports = () => {
   const [openModal, setOpenModal] = useState(false); // Estado para abrir/cerrar el modal
   const [selectedReport, setSelectedReport] = useState(null); // Estado para los detalles del reporte seleccionado
   const [dataDetails, setDataDetails] = useState(null); // Estado para almacenar los detalles del reporte
+    // Modal de filtro por fecha
+  const [dateModalOpen, setDateModalOpen] = useState(false);
+  const [dateFilterType, setDateFilterType] = useState(""); // "loan" | "late" | "top"
+  const [initDate, setInitDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   // Estados de los reportes
   const [activeLoans, setActiveLoans] = useState([]);
   const [clientsWithDelays, setClientsWithDelays] = useState([]);
   const [topTools, setTopTools] = useState([]);
+  const [isFiltered, setIsFiltered] = useState(false);
+
 
   // ADMIN CHECK
   const { keycloak } = useKeycloak();
@@ -90,22 +97,27 @@ const Reports = () => {
       });
   };
 
-  const generatereportActiveLoan = () => { 
-    ReportsService.createLoanReport()
+const generatereportActiveLoan = () => { 
+    ReportsService.createLoanReport().then(() => {
+        showActiveLoansReport(); // 🔥 refresco automático
+        alert("Reporte generado correctamente");
+    });
+}
 
-  }
+const generatereportClientLate = () => { 
+    ReportsService.createClientLateReport().then(() => {
+        showClientsLateReport(); // 🔥 refresco automático
+        alert("Reporte generado correctamente");
+    });
+}
 
-  const generatereportClientLate = () => { 
-    ReportsService.createClientLateReport()
-
-  }
-
-  const generatereportTopTools = () => { 
-    ReportsService.createTopToolsReport()
-  }
-
+const generatereportTopTools = () => { 
+    ReportsService.createTopToolsReport().then(() => {
+        showTopToolsReport(); // 🔥 refresco automático
+        alert("Reporte generado correctamente");
+    });
+}
  
-
   // Cargar los reportes al montar el componente
   useEffect(() => {
     showActiveLoansReport();
@@ -204,6 +216,54 @@ const Reports = () => {
     setDataDetails(null);
   };
 
+  const applyDateFilter = () => {
+  if (!initDate || !endDate) {
+    alert("Debe seleccionar ambas fechas");
+    return;
+  }
+
+  ReportsService.reportdate(initDate, endDate)
+    .then(response => {
+      const filtered = response.data || [];
+
+      if (dateFilterType === "loan") {
+        setActiveLoans(filtered.filter(r => r.name === "ReportLoanTools"));
+      }
+
+      if (dateFilterType === "late") {
+        setClientsWithDelays(filtered.filter(r => r.name === "ReportClientLoanLate"));
+      }
+
+      if (dateFilterType === "top") {
+        setTopTools(filtered.filter(r => r.name === "ReportTopTools"));
+      }
+
+      setIsFiltered(true);   // 🔥 activa indicador de filtro
+      setDateModalOpen(false);
+    })
+    .catch(err => console.error(err));
+};
+
+const removeFilter = () => {
+    if (dateFilterType === "loan") {
+      showActiveLoansReport();
+    }
+    if (dateFilterType === "late") {
+      showClientsLateReport();
+    }
+    if (dateFilterType === "top") {
+      showTopToolsReport();
+    }
+
+    setInitDate("");
+    setEndDate("");
+    setIsFiltered(false);
+    setDateModalOpen(false);
+  };
+
+
+
+
   // Modal de detalles
   const renderReportDetails = () => {
   if (dataDetails) {
@@ -260,7 +320,7 @@ const Reports = () => {
       <CssBaseline />
 
       <Box sx={{ p: 4, minHeight: "100vh" }}>
-                      {/* Botón menú hamburguesa */}
+                      {/* SlideBar*/}
                       <IconButton
                           color="inherit"
                           onClick={() => setDrawerOpen(true)}
@@ -324,7 +384,8 @@ const Reports = () => {
                           </List>
                       </Drawer>
 
-                    
+
+        {/*Label de todo el compenente de los reportes */}          
       <Typography variant="h3" align="center" sx={{ fontWeight: "bold", color: "rgba(255,94,0,1)", mb: 4 }}>
         📊 Centro de Reportes
       </Typography>
@@ -333,6 +394,24 @@ const Reports = () => {
         <Paper sx={{ p: 4, mb: 5, borderRadius: 4, backgroundColor: "#fff", boxShadow: "0 4px 18px rgba(255,94,0,0.15)" }}>
           <Typography variant="h6" sx={{ fontWeight: "bold", color: "rgba(255,94,0,1)", mb: 3 }}>
             📋 Préstamos Activos ({activeLoans.length})
+
+            <Button
+              onClick={() => { setDateFilterType("loan"); setDateModalOpen(true); }}
+              sx={{ 
+                backgroundColor: "rgba(255,94,0,1)",  // Color de fondo naranja
+                color: "#fff",  // Texto blanco
+                padding: "6px 12px",  // Ajusta el tamaño del botón
+                fontWeight: "bold",  // Establece el peso de la fuente
+                fontSize: "0.875rem",  // Ajusta el tamaño de la fuente
+                borderRadius: 2,  // Borde redondeado
+                "&:hover": {
+                  backgroundColor: "rgba(255,94,0,0.8)",  // Color al pasar el mouse (opaco)
+                },
+                translate: "9px"
+              }}
+            >
+              Filtrar por fecha
+            </Button>
 
             <Button 
             onClick = {() => generatereportActiveLoan()} 
@@ -395,6 +474,24 @@ const Reports = () => {
           <Typography variant="h6" sx={{ fontWeight: "bold", color: "rgba(255,94,0,1)", mb: 3 }}>
             ⚠ Clientes con Atraso ({clientsWithDelays.length})
 
+            <Button
+              onClick={() => { setDateFilterType("late"); setDateModalOpen(true); }}
+              sx={{
+                backgroundColor: "rgba(255,94,0,1)",  // Color de fondo naranja
+                color: "#fff",  // Texto blanco
+                padding: "6px 12px",  // Ajusta el tamaño del botón
+                fontWeight: "bold",  // Establece el peso de la fuente
+                fontSize: "0.875rem",  // Ajusta el tamaño de la fuente
+                borderRadius: 2,  // Borde redondeado
+                "&:hover": {
+                  backgroundColor: "rgba(255,94,0,0.8)",  // Color al pasar el mouse (opaco)
+                },
+                translate: "9px"
+               }}
+            >
+              Filtrar por fecha
+            </Button>
+
             <Button 
             onClick = {() => generatereportClientLate()} 
             sx={{
@@ -454,6 +551,24 @@ const Reports = () => {
         <Paper sx={{ p: 4, mb: 5, borderRadius: 4, backgroundColor: "#fff", boxShadow: "0 4px 18px rgba(255,94,0,0.15)" }}>
           <Typography variant="h6" sx={{ fontWeight: "bold", color: "rgba(255,94,0,1)", mb: 3 }}>
             🏆 Herramientas Más Prestadas ({topTools.length})
+
+            <Button
+              onClick={() => { setDateFilterType("top"); setDateModalOpen(true); }}
+              sx={{ 
+                backgroundColor: "rgba(255,94,0,1)",  // Color de fondo naranja
+                color: "#fff",  // Texto blanco
+                padding: "6px 12px",  // Ajusta el tamaño del botón
+                fontWeight: "bold",  // Establece el peso de la fuente
+                fontSize: "0.875rem",  // Ajusta el tamaño de la fuente
+                borderRadius: 2,  // Borde redondeado
+                "&:hover": {
+                  backgroundColor: "rgba(255,94,0,0.8)",  // Color al pasar el mouse (opaco)
+                },
+                translate: "9px"
+               }}
+            >
+              Filtrar por fecha
+            </Button>
 
             {/* Usando el componente Button de Material-UI */}
             <Button
@@ -532,6 +647,69 @@ const Reports = () => {
         </Box>
       </Modal>
     </Box>
+
+    <Modal open={dateModalOpen} onClose={() => setDateModalOpen(false)}>
+  <Box sx={{
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      width: 350,
+      backgroundColor: "white",
+      p: 3,
+      borderRadius: 2,
+      boxShadow: 24,
+  }}>
+      <Typography variant="h6" sx={{ mb: 2, color: "rgba(255,94,0,1)", fontWeight: "bold" }}>
+          Filtrar por Fecha
+      </Typography>
+
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <input type="date" value={initDate} onChange={(e) => setInitDate(e.target.value)} />
+          <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+
+          <Button
+              onClick={applyDateFilter}
+              sx={{ backgroundColor: "rgba(255,94,0,1)",  // Color de fondo naranja
+                          color: "#fff",  // Texto blanco
+                          padding: "6px 12px",  // Ajusta el tamaño del botón
+                          fontWeight: "bold",  // Establece el peso de la fuente
+                          fontSize: "0.875rem",  // Ajusta el tamaño de la fuente
+                          borderRadius: 2,  // Borde redondeado
+                          "&:hover": {
+                            backgroundColor: "rgba(255,94,0,0.8)",  // Color al pasar el mouse (opaco)
+                          },}}
+          >
+              Aplicar filtro
+          </Button>
+
+          {isFiltered && (
+            <Button
+                onClick={removeFilter}
+                sx={{ backgroundColor: "rgba(255,94,0,1)",  // Color de fondo naranja
+                          color: "#fff",  // Texto blanco
+                          padding: "6px 12px",  // Ajusta el tamaño del botón
+                          fontWeight: "bold",  // Establece el peso de la fuente
+                          fontSize: "0.875rem",  // Ajusta el tamaño de la fuente
+                          borderRadius: 2,  // Borde redondeado
+                          "&:hover": {
+                            backgroundColor: "rgba(255,94,0,0.8)",  // Color al pasar el mouse (opaco)
+                          },}}
+            >
+                Quitar filtro
+            </Button>
+          )}
+
+          <Button
+              onClick={() => setDateModalOpen(false)}
+              sx={{ mt: 1 }}
+          >
+              Cancelar
+          </Button>
+      </Box>
+  </Box>
+</Modal>
+
 
     </ThemeProvider>
   );
